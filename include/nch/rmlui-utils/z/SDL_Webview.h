@@ -8,7 +8,7 @@ namespace nch { class SDL_Webview {
 public:
     SDL_Webview(std::string rmlCtxID, nch::Vec2i dimensions);
     ~SDL_Webview();
-    static void rmlGlobalInit(SDL_Renderer* sdlRenderer, std::string sdlBasePath);
+    static void rmlGlobalInit(SDL_Renderer* sdlRenderer, std::string sdlBasePath, std::string webAssetsPath = "web_assets_default");
     static void rmlGlobalShutdown();
 
     void tick();

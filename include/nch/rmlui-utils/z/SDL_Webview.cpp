@@ -27,7 +27,7 @@ SDL_Webview::~SDL_Webview()
     Rml::RemoveContext(rmlCtxID);
 }
 
-void SDL_Webview::rmlGlobalInit(SDL_Renderer* sdlRenderer, std::string sdlBasePath)
+void SDL_Webview::rmlGlobalInit(SDL_Renderer* sdlRenderer, std::string sdlBasePath, std::string webAssetsPath)
 {
     if(rmlInitialized) {
         Log::warn(__PRETTY_FUNCTION__, "RmlUi is already globally initialized");
@@ -49,8 +49,8 @@ void SDL_Webview::rmlGlobalInit(SDL_Renderer* sdlRenderer, std::string sdlBasePa
         sdlSystemInterface = new SystemInterface_SDL();
         Rml::SetSystemInterface(sdlSystemInterface);
         //Load basic assets
-        Rml::LoadFontFace(sdlBasePath+"web_assets_default/LatoLatin-Regular.ttf");
-        Rml::LoadFontFace(sdlBasePath+"web_assets_default/NotoEmoji-Regular.ttf", true);
+        Rml::LoadFontFace(sdlBasePath+"/"+webAssetsPath+"/LatoLatin-Regular.ttf");
+        Rml::LoadFontFace(sdlBasePath+"/"+webAssetsPath+"/NotoEmoji-Regular.ttf", true);
     }
 
     rmlInitialized = true;
