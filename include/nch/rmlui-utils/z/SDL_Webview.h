@@ -19,7 +19,7 @@ public:
     Rml::ElementDocument* rmlLoadDocumentByAbsolutePath(std::string webAssetPath);
     Rml::ElementDocument* rmlLoadDocument(std::string webAsset);
     void reload();
-    void setLogging(bool shouldLog);
+    static void setLogging(bool shouldLog);
 
 private:
     static SDL_Renderer* sdlRenderer;
