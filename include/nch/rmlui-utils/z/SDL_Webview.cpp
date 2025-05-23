@@ -18,6 +18,9 @@ SDL_Webview::SDL_Webview(std::string rmlCtxID, Vec2i dimensions)
 {
     SDL_Webview::rmlCtxID = rmlCtxID;
     rmlContext = Rml::CreateContext(rmlCtxID, Rml::Vector2i(dimensions.x, dimensions.y));
+    if(rmlContext==nullptr) {
+        Log::errorv(__PRETTY_FUNCTION__, "Rml::CreateContext", "Failed to create RmlUi context \"%s\"", rmlCtxID.c_str());
+    }
 }
 SDL_Webview::~SDL_Webview()
 {
