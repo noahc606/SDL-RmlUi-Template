@@ -11,6 +11,7 @@ using namespace nch;
 SDL_Renderer* SDL_Webview::sdlRenderer = nullptr;
 std::string SDL_Webview::sdlBasePath = "???nullptr???";
 std::string SDL_Webview::webAssetsSubpath = "???nullptr???";
+bool SDL_Webview::loggingEnabled = true;
 
 bool rmlInitialized = false;
 SystemInterface_SDL* sdlSystemInterface = nullptr;
@@ -135,14 +136,20 @@ Rml::ElementDocument* SDL_Webview::rmlLoadDocumentByAbsolutePath(std::string web
     workingDocumentPath = webAssetPath;
     workingDocument = doc;
     doc->Show();
+    doc->ReloadStyleSheet();
     return doc;
 }
 Rml::ElementDocument* SDL_Webview::rmlLoadDocument(std::string webAsset) {
     return rmlLoadDocumentByAbsolutePath(sdlBasePath+"/"+webAssetsSubpath+"/web_assets/"+webAsset);
 }
+
 void SDL_Webview::reload()
 {
-    Timer tim("Webpage reload", true);
+    Timer tim("webpage reload", loggingEnabled);
     rmlContext->UnloadDocument(workingDocument);
     rmlLoadDocumentByAbsolutePath(workingDocumentPath);
+}
+
+void SDL_Webview::setLogging(bool loggingEnabled) {
+    SDL_Webview::loggingEnabled = loggingEnabled;
 }

@@ -19,11 +19,13 @@ public:
     Rml::ElementDocument* rmlLoadDocumentByAbsolutePath(std::string webAssetPath);
     Rml::ElementDocument* rmlLoadDocument(std::string webAsset);
     void reload();
+    void setLogging(bool shouldLog);
 
 private:
     static SDL_Renderer* sdlRenderer;
     static std::string sdlBasePath;
     static std::string webAssetsSubpath;
+    static bool loggingEnabled;
 
     nch::Vec2i lastMousePos = {-1, -1};
     std::string rmlCtxID = "???null???";
