@@ -2,6 +2,7 @@
 #include <RmlUi/Core.h>
 #include <nch/cpp-utils/log.h>
 #include <nch/sdl-utils/input.h>
+#include <nch/cpp-utils/timer.h>
 #include "RmlUi_Platform_SDL.h"
 #include "RmlUi_Renderer_SDL.h"
 
@@ -9,11 +10,14 @@ using namespace nch;
 
 SDL_Renderer* SDL_Webview::sdlRenderer = nullptr;
 std::string SDL_Webview::sdlBasePath = "???nullptr???";
-std::string SDL_Webview::webAssetsSubpath = "";
+std::string SDL_Webview::webAssetsSubpath = "???nullptr???";
 
 bool rmlInitialized = false;
 SystemInterface_SDL* sdlSystemInterface = nullptr;
 RenderInterface_SDL* sdlRenderInterface = nullptr;
+std::string workingDocumentPath = "???nullptr???";
+Rml::ElementDocument* workingDocument = nullptr;
+
 
 SDL_Webview::SDL_Webview(std::string rmlCtxID, Vec2i dimensions)
 {
@@ -72,12 +76,13 @@ void SDL_Webview::rmlGlobalShutdown()
 
 void SDL_Webview::tick()
 {
-	// Submit input events such as MouseMove and key events (not shown) to the context.
+    //Mouse movement
 	Vec2i mousePos = { Input::getMouseX(), Input::getMouseY() };
 	if(lastMousePos!=Vec2i(-1, 1) && lastMousePos!=mousePos) {
 		rmlContext->ProcessMouseMove(mousePos.x, mousePos.y, 0);
 	}
 
+    //Mouse clicking
     for(int i = 0; i<3; i++) {
         if(Input::mouseDownTime(i)==1) {
             rmlContext->ProcessMouseButtonDown(i, 0);
@@ -87,8 +92,7 @@ void SDL_Webview::tick()
         }
     }
 
-	// Update the context to reflect any changes resulting from input events, animations,
-	// modified and added elements, or changed data in data bindings.
+    //Update context
 	rmlContext->Update();
 
 	lastMousePos = mousePos;
@@ -104,6 +108,9 @@ void SDL_Webview::draw()
 void SDL_Webview::events(SDL_Event& evt)
 {
     switch(evt.type) {
+        case SDL_KEYDOWN: {
+            
+        } break;
         case SDL_TEXTINPUT: {
             rmlContext->ProcessTextInput(evt.text.text);
         } break;
@@ -114,9 +121,30 @@ Rml::DataModelConstructor SDL_Webview::rmlCreateDataModel(std::string name, Rml:
     return rmlContext->CreateDataModel(name, dataTypeRegister);
 }
 
-Rml::ElementDocument* SDL_Webview::rmlLoadDocument(std::string webAsset) {
-    return rmlContext->LoadDocument(sdlBasePath+"/"+webAssetsSubpath+"/web_assets/"+webAsset);
-}
 Rml::ElementDocument* SDL_Webview::rmlLoadDocumentByAbsolutePath(std::string webAssetPath) {
-    return rmlContext->LoadDocument(webAssetPath);
+    //Check whether context created
+    if(rmlContext==nullptr) {
+        Log::warnv(__PRETTY_FUNCTION__, "doing nothing", "RmlUi is not initialized (did you call SDL_Webview::rmlGlobalInit()?)");
+        return nullptr;
+    }
+    //Try to load document
+    Rml::ElementDocument* doc = rmlContext->LoadDocument(webAssetPath);
+    if(doc==nullptr) {
+        Log::errorv(__PRETTY_FUNCTION__, "Rml::Context::LoadDocument", "Failed to load webpage at path \"%s\"", webAssetPath.c_str());
+        return nullptr;
+    }
+    //Successful load by this point
+    workingDocumentPath = webAssetPath;
+    workingDocument = doc;
+    doc->Show();
+    return doc;
+}
+Rml::ElementDocument* SDL_Webview::rmlLoadDocument(std::string webAsset) {
+    return rmlLoadDocumentByAbsolutePath(sdlBasePath+"/"+webAssetsSubpath+"/web_assets/"+webAsset);
+}
+void SDL_Webview::reload()
+{
+    Timer tim("Webpage reload", true);
+    rmlContext->UnloadDocument(workingDocument);
+    rmlLoadDocumentByAbsolutePath(workingDocumentPath);
 }

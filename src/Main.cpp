@@ -57,17 +57,15 @@ int main(int argc, char** argv)
             constructor.Bind("show_text", &showText);
             constructor.Bind("animal", &animal);
         }
-        //Load document (you may want to use 'basePath')
+        //Load document
         Rml::ElementDocument* document = sdlWebview->rmlLoadDocument("hello_world.html");
-        document->Show();
         //Customize
         Rml::Element* element = document->GetElementById("world");
         element->SetInnerRML(reinterpret_cast<const char*>(u8"🌍"));
         element->SetProperty("font-size", "1.5em");
     } else {
-        //Load document (you may want to use 'basePath')
-        Rml::ElementDocument* document = sdlWebview->rmlLoadDocument("hello_world.html");
-        document->Show();
+        //Load document
+        sdlWebview->rmlLoadDocument("hello_world.html");
     }
 
 
