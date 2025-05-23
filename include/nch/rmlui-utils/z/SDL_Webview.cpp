@@ -46,8 +46,8 @@ void SDL_Webview::rmlGlobalInit(SDL_Renderer* sdlRenderer, std::string sdlBasePa
         sdlSystemInterface = new SystemInterface_SDL();
         Rml::SetSystemInterface(sdlSystemInterface);
         //Load basic assets
-        Rml::LoadFontFace(sdlBasePath+"assets_default/LatoLatin-Regular.ttf");
-        Rml::LoadFontFace(sdlBasePath+"assets_default/NotoEmoji-Regular.ttf", true);
+        Rml::LoadFontFace(sdlBasePath+"web_assets_default/LatoLatin-Regular.ttf");
+        Rml::LoadFontFace(sdlBasePath+"web_assets_default/NotoEmoji-Regular.ttf", true);
     }
 
     rmlInitialized = true;
