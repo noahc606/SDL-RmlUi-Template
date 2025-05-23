@@ -16,7 +16,9 @@ std::string basePath;
 SDL_Webview* sdlWebview;
 
 void draw() {
+    SDL_RenderClear(sdlRenderer);
     sdlWebview->draw();
+    SDL_RenderPresent(sdlRenderer);
 }
 void tick() {
     sdlWebview->tick();

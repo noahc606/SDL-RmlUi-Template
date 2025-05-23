@@ -100,9 +100,7 @@ void SDL_Webview::tick()
 
 void SDL_Webview::draw()
 {   
-	SDL_RenderClear(sdlRenderer);
 	rmlContext->Render();
-	SDL_RenderPresent(sdlRenderer);
 }
 
 void SDL_Webview::events(SDL_Event& evt)
