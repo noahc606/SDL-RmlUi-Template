@@ -9,6 +9,7 @@ using namespace nch;
 
 SDL_Renderer* SDL_Webview::sdlRenderer = nullptr;
 std::string SDL_Webview::sdlBasePath = "???nullptr???";
+std::string SDL_Webview::webAssetsSubpath = "";
 
 bool rmlInitialized = false;
 SystemInterface_SDL* sdlSystemInterface = nullptr;
@@ -27,7 +28,7 @@ SDL_Webview::~SDL_Webview()
     Rml::RemoveContext(rmlCtxID);
 }
 
-void SDL_Webview::rmlGlobalInit(SDL_Renderer* sdlRenderer, std::string sdlBasePath, std::string webAssetsPath)
+void SDL_Webview::rmlGlobalInit(SDL_Renderer* sdlRenderer, std::string webAssetsSubpath)
 {
     if(rmlInitialized) {
         Log::warn(__PRETTY_FUNCTION__, "RmlUi is already globally initialized");
@@ -42,15 +43,16 @@ void SDL_Webview::rmlGlobalInit(SDL_Renderer* sdlRenderer, std::string sdlBasePa
             return;
         }
         //Subsystems init
-        SDL_Webview::sdlBasePath = sdlBasePath;
         SDL_Webview::sdlRenderer = sdlRenderer;
+        SDL_Webview::sdlBasePath = SDL_GetBasePath();
+        SDL_Webview::webAssetsSubpath = webAssetsSubpath;
         sdlRenderInterface = new RenderInterface_SDL(SDL_Webview::sdlRenderer);
         Rml::SetRenderInterface(sdlRenderInterface);
         sdlSystemInterface = new SystemInterface_SDL();
         Rml::SetSystemInterface(sdlSystemInterface);
         //Load basic assets
-        Rml::LoadFontFace(sdlBasePath+"/"+webAssetsPath+"/LatoLatin-Regular.ttf");
-        Rml::LoadFontFace(sdlBasePath+"/"+webAssetsPath+"/NotoEmoji-Regular.ttf", true);
+        Rml::LoadFontFace(sdlBasePath+"/"+webAssetsSubpath+"/web_assets_default/LatoLatin-Regular.ttf");
+        Rml::LoadFontFace(sdlBasePath+"/"+webAssetsSubpath+"/web_assets_default/NotoEmoji-Regular.ttf", true);
     }
 
     rmlInitialized = true;
@@ -112,6 +114,9 @@ Rml::DataModelConstructor SDL_Webview::rmlCreateDataModel(std::string name, Rml:
     return rmlContext->CreateDataModel(name, dataTypeRegister);
 }
 
-Rml::ElementDocument* SDL_Webview::rmlLoadDocument(std::string documentPath) {
-    return rmlContext->LoadDocument(documentPath);
+Rml::ElementDocument* SDL_Webview::rmlLoadDocument(std::string webAsset) {
+    return rmlContext->LoadDocument(sdlBasePath+"/"+webAssetsSubpath+"/web_assets/"+webAsset);
+}
+Rml::ElementDocument* SDL_Webview::rmlLoadDocumentByAbsolutePath(std::string webAssetPath) {
+    return rmlContext->LoadDocument(webAssetPath);
 }

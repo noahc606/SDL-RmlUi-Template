@@ -43,7 +43,7 @@ int main(int argc, char** argv)
         int imgFlags = IMG_INIT_PNG;
         assert(IMG_Init(imgFlags)==imgFlags);
         //SDL_Webview (RmlUi wrapper)
-        SDL_Webview::rmlGlobalInit(sdlRenderer, basePath);
+        SDL_Webview::rmlGlobalInit(sdlRenderer);
         sdlWebview = new SDL_Webview("main", Vec2i(640, 480));
     }
 
@@ -58,7 +58,7 @@ int main(int argc, char** argv)
             constructor.Bind("animal", &animal);
         }
         //Load document (you may want to use 'basePath')
-        Rml::ElementDocument* document = sdlWebview->rmlLoadDocument(basePath+"web_assets/hello_world.html");
+        Rml::ElementDocument* document = sdlWebview->rmlLoadDocument("hello_world.html");
         document->Show();
         //Customize
         Rml::Element* element = document->GetElementById("world");
@@ -66,7 +66,7 @@ int main(int argc, char** argv)
         element->SetProperty("font-size", "1.5em");
     } else {
         //Load document (you may want to use 'basePath')
-        Rml::ElementDocument* document = sdlWebview->rmlLoadDocument(basePath+"web_assets/hello_world.html");
+        Rml::ElementDocument* document = sdlWebview->rmlLoadDocument("hello_world.html");
         document->Show();
     }
 
