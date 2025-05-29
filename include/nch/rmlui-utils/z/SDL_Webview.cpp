@@ -1,36 +1,50 @@
 #include "SDL_Webview.h"
 #include <RmlUi/Core.h>
 #include <nch/cpp-utils/log.h>
-#include <nch/sdl-utils/input.h>
 #include <nch/cpp-utils/timer.h>
+#include <nch/sdl-utils/input.h>
+#include <nch/sdl-utils/rect.h>
 #include "RmlUi_Platform_SDL.h"
 #include "RmlUi_Renderer_SDL.h"
 
 using namespace nch;
 
 SDL_Renderer* SDL_Webview::sdlRenderer = nullptr;
-std::string SDL_Webview::sdlBasePath = "???nullptr???";
-std::string SDL_Webview::webAssetsSubpath = "???nullptr???";
+std::string SDL_Webview::sdlBasePath = "???null???";
+std::string SDL_Webview::webAssetsSubpath = "???null???";
 bool SDL_Webview::loggingEnabled = true;
 
 bool rmlInitialized = false;
 SystemInterface_SDL* sdlSystemInterface = nullptr;
 RenderInterface_SDL* sdlRenderInterface = nullptr;
-std::string workingDocumentPath = "???nullptr???";
+std::string workingDocumentPath = "???null???";
 Rml::ElementDocument* workingDocument = nullptr;
 
 
 SDL_Webview::SDL_Webview(std::string rmlCtxID, Vec2i dimensions)
 {
+    if(!rmlInitialized) {
+        Log::warnv(__PRETTY_FUNCTION__, "doing nothing", "RmlUi is not initialized (did you call SDL_Webview::rmlGlobalInit()?)");
+        return;
+    }
+
     SDL_Webview::rmlCtxID = rmlCtxID;
+    SDL_Webview::dims = dimensions;
     rmlContext = Rml::CreateContext(rmlCtxID, Rml::Vector2i(dimensions.x, dimensions.y));
     if(rmlContext==nullptr) {
         Log::errorv(__PRETTY_FUNCTION__, "Rml::CreateContext", "Failed to create RmlUi context \"%s\"", rmlCtxID.c_str());
     }
+
+    webTex = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, dimensions.x, dimensions.y);
 }
 SDL_Webview::~SDL_Webview()
 {
+    rmlContext->UnloadDocument(workingDocument);
+    workingDocument = nullptr;
+    workingDocumentPath = "???null???";
+
     Rml::RemoveContext(rmlCtxID);
+    SDL_DestroyTexture(webTex);
 }
 
 void SDL_Webview::rmlGlobalInit(SDL_Renderer* sdlRenderer, std::string webAssetsSubpath)
@@ -99,9 +113,24 @@ void SDL_Webview::tick()
 	lastMousePos = mousePos;
 }
 
-void SDL_Webview::draw()
+void SDL_Webview::render()
 {   
-	rmlContext->Render();
+    SDL_Texture* oldTgt = SDL_GetRenderTarget(sdlRenderer);
+    SDL_SetRenderTarget(sdlRenderer, webTex); {
+        SDL_RenderClear(sdlRenderer);
+        rmlContext->Render();
+    } SDL_SetRenderTarget(sdlRenderer, oldTgt);
+}
+
+void SDL_Webview::drawCopy(Vec2i pos)
+{
+    Rect dst(pos.x, pos.y, dims.x, dims.y);
+    
+    SDL_SetRenderDrawBlendMode(sdlRenderer, SDL_BLENDMODE_BLEND);
+    SDL_SetRenderDrawColor(sdlRenderer, 255, 255, 255, 255);
+    SDL_RenderFillRect(sdlRenderer, &dst.r);
+    
+    SDL_RenderCopy(sdlRenderer, webTex, NULL, &dst.r);
 }
 
 void SDL_Webview::events(SDL_Event& evt)
@@ -121,23 +150,30 @@ Rml::DataModelConstructor SDL_Webview::rmlCreateDataModel(std::string name, Rml:
 }
 
 Rml::ElementDocument* SDL_Webview::rmlLoadDocumentByAbsolutePath(std::string webAssetPath) {
-    //Check whether context created
-    if(rmlContext==nullptr) {
-        Log::warnv(__PRETTY_FUNCTION__, "doing nothing", "RmlUi is not initialized (did you call SDL_Webview::rmlGlobalInit()?)");
+    /* Validation */
+    if(!rmlInitialized) {
+        Log::warnv(__PRETTY_FUNCTION__, "returning nullptr", "RmlUi is not initialized (did you call SDL_Webview::rmlGlobalInit()?)");
         return nullptr;
     }
-    //Try to load document
-    Rml::ElementDocument* doc = rmlContext->LoadDocument(webAssetPath);
-    if(doc==nullptr) {
+
+    /* Load */
+    //Unload old document
+    if(workingDocument!=nullptr) {
+        rmlContext->UnloadDocument(workingDocument);
+        rmlContext->Update();    
+    }
+    //Load new document
+    workingDocument = rmlContext->LoadDocument(webAssetPath);
+    if(workingDocument==nullptr) {
         Log::errorv(__PRETTY_FUNCTION__, "Rml::Context::LoadDocument", "Failed to load webpage at path \"%s\"", webAssetPath.c_str());
         return nullptr;
     }
     //Successful load by this point
     workingDocumentPath = webAssetPath;
-    workingDocument = doc;
-    doc->Show();
-    doc->ReloadStyleSheet();
-    return doc;
+    workingDocument->Show();
+    workingDocument->ReloadStyleSheet();
+    return workingDocument;
+    
 }
 Rml::ElementDocument* SDL_Webview::rmlLoadDocument(std::string webAsset) {
     return rmlLoadDocumentByAbsolutePath(sdlBasePath+"/"+webAssetsSubpath+"/web_assets/"+webAsset);
@@ -145,8 +181,13 @@ Rml::ElementDocument* SDL_Webview::rmlLoadDocument(std::string webAsset) {
 
 void SDL_Webview::reload()
 {
+    /* Validation */
+    if(workingDocument==nullptr || workingDocumentPath=="???null???") {
+        Log::warnv(__PRETTY_FUNCTION__, "doing nothing", "No document is currently loaded into this SDL_Webview");
+        return;
+    }
+
     Timer tim("webpage reload", loggingEnabled);
-    rmlContext->UnloadDocument(workingDocument);
     rmlLoadDocumentByAbsolutePath(workingDocumentPath);
 }
 

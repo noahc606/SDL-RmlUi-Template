@@ -12,7 +12,8 @@ public:
     static void rmlGlobalShutdown();
 
     void tick();
-    void draw();
+    void render();
+    void drawCopy(nch::Vec2i pos);
     void events(SDL_Event& evt);
 
     Rml::DataModelConstructor rmlCreateDataModel(std::string name, Rml::DataTypeRegister* dataTypeRegister = nullptr);
@@ -30,4 +31,6 @@ private:
     nch::Vec2i lastMousePos = {-1, -1};
     std::string rmlCtxID = "???null???";
     Rml::Context* rmlContext = nullptr;
+    SDL_Texture* webTex = nullptr;
+    nch::Vec2i dims = {-1, -1};
 }; }

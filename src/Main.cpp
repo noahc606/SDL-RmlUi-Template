@@ -17,7 +17,11 @@ SDL_Webview* sdlWebview;
 
 void draw() {
     SDL_RenderClear(sdlRenderer);
-    sdlWebview->draw();
+    SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 255);
+    SDL_RenderFillRect(sdlRenderer, NULL);
+
+    sdlWebview->render();
+    sdlWebview->drawCopy({0, 0});
     SDL_RenderPresent(sdlRenderer);
 }
 void tick() {
@@ -60,9 +64,9 @@ int main(int argc, char** argv)
             constructor.Bind("animal", &animal);
         }
         //Load document
-        Rml::ElementDocument* document = sdlWebview->rmlLoadDocument("hello_world.html");
+        Rml::ElementDocument* doc = sdlWebview->rmlLoadDocument("hello_world.html");
         //Customize
-        Rml::Element* element = document->GetElementById("world");
+        Rml::Element* element = doc->GetElementById("world");
         element->SetInnerRML(reinterpret_cast<const char*>(u8"🌍"));
         element->SetProperty("font-size", "1.5em");
     } else {
