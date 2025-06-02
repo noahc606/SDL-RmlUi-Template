@@ -70,11 +70,18 @@ void SDL_Webview::rmlGlobalInit(SDL_Renderer* sdlRenderer, std::string webAssets
         sdlSystemInterface = new SystemInterface_SDL();
         Rml::SetSystemInterface(sdlSystemInterface);
         //Load basic assets
-        Rml::LoadFontFace(sdlBasePath+"/"+webAssetsSubpath+"/web_assets_default/LatoLatin-Regular.ttf");
-        Rml::LoadFontFace(sdlBasePath+"/"+webAssetsSubpath+"/web_assets_default/NotoEmoji-Regular.ttf", true);
+        rmlGloballyLoadFont(sdlBasePath+"/"+webAssetsSubpath+"/web_assets_default/LatoLatin-Regular.ttf");
+        rmlGloballyLoadFont(sdlBasePath+"/"+webAssetsSubpath+"/web_assets_default/NotoEmoji-Regular.ttf", true);
     }
 
     rmlInitialized = true;
+}
+
+void SDL_Webview::rmlGloballyLoadFont(std::string absolutePath, bool fallback)
+{
+    if(!Rml::LoadFontFace(absolutePath, fallback)) {
+        Log::errorv(__PRETTY_FUNCTION__, "Rml::LoadFontFace", "Failed to load font @ \"%s\"", absolutePath.c_str());
+    }
 }
 
 void SDL_Webview::rmlGlobalShutdown()

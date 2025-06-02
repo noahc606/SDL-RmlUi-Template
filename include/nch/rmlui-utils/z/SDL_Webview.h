@@ -9,6 +9,7 @@ public:
     SDL_Webview(std::string rmlCtxID, nch::Vec2i dimensions);
     ~SDL_Webview();
     static void rmlGlobalInit(SDL_Renderer* sdlRenderer, std::string webAssetsSubpath = "");
+    static void rmlGloballyLoadFont(std::string absolutePath, bool fallback = false);
     static void rmlGlobalShutdown();
 
     void tick();
