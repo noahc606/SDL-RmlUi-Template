@@ -20,6 +20,9 @@ public:
     Rml::DataModelConstructor rmlCreateDataModel(std::string name, Rml::DataTypeRegister* dataTypeRegister = nullptr);
     Rml::ElementDocument* rmlLoadDocumentByAbsolutePath(std::string webAssetPath);
     Rml::ElementDocument* rmlLoadDocument(std::string webAsset);
+    
+    Rml::DataModelConstructor getWorkingDataModel(std::string name);
+    Rml::ElementDocument* getWorkingDocument();
     void reload();
     static void setLogging(bool shouldLog);
 

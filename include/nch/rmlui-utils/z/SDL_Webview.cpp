@@ -153,7 +153,11 @@ void SDL_Webview::events(SDL_Event& evt)
 }
 
 Rml::DataModelConstructor SDL_Webview::rmlCreateDataModel(std::string name, Rml::DataTypeRegister* dataTypeRegister) {
+    rmlContext->RemoveDataModel(name);
     return rmlContext->CreateDataModel(name, dataTypeRegister);
+}
+Rml::DataModelConstructor SDL_Webview::getWorkingDataModel(std::string name) {
+    return rmlContext->GetDataModel(name);
 }
 
 Rml::ElementDocument* SDL_Webview::rmlLoadDocumentByAbsolutePath(std::string webAssetPath) {
@@ -184,6 +188,10 @@ Rml::ElementDocument* SDL_Webview::rmlLoadDocumentByAbsolutePath(std::string web
 }
 Rml::ElementDocument* SDL_Webview::rmlLoadDocument(std::string webAsset) {
     return rmlLoadDocumentByAbsolutePath(sdlBasePath+"/"+webAssetsSubpath+"/web_assets/"+webAsset);
+}
+
+Rml::ElementDocument* SDL_Webview::getWorkingDocument() {
+    return workingDocument;
 }
 
 void SDL_Webview::reload()

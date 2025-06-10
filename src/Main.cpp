@@ -14,6 +14,7 @@ using namespace nch;
 SDL_Renderer* sdlRenderer;
 std::string basePath;
 SDL_Webview* sdlWebview;
+uint64_t ticksPassed = 0;
 
 void draw() {
     SDL_RenderClear(sdlRenderer);
@@ -26,6 +27,29 @@ void draw() {
 }
 void tick() {
     sdlWebview->tick();
+
+    ticksPassed++;
+
+    //Dynamic customization every 1s
+    std::vector<std::string> animals = { "dog", "cat", "lion", "giraffe", "horse", "goat", "pig", "cow" };
+    if(ticksPassed%60==0) {        
+        //Update data
+        bool showText = true;
+        std::string animal = animals[(ticksPassed/60)%(animals.size())];
+        if(auto dmc = sdlWebview->rmlCreateDataModel("animals")) {
+            dmc.Bind("show_text", &showText);
+            dmc.Bind("animal", &animal);
+        }
+
+        //Data updates require reload, and reloads cause all DOM element updates until this point to be lost.
+        //Alternatively you could get away with using DOM element updates for everything.
+        sdlWebview->reload();
+
+        //Re-add DOM we had at the beginning
+        Rml::Element* element = sdlWebview->getWorkingDocument()->GetElementById("world");
+        element->SetInnerRML(reinterpret_cast<const char*>(u8"🌍"));
+        element->SetProperty("font-size", "1.5em");
+    }
 }
 void events(SDL_Event& evt) {
     sdlWebview->events(evt);
@@ -53,25 +77,21 @@ int main(int argc, char** argv)
         sdlWebview = new SDL_Webview("main", Vec2i(640, 480));
     }
 
-    /* Set parameters, load, and customize web document */
-    bool simpleLoad = false;
-    if(!simpleLoad) {
-        //Sync data
+    /* Set data models, load, and customize web document */
+    {
+        //Update elements thru data models
         bool showText = true;
         std::string animal = "dog";
-        if(Rml::DataModelConstructor constructor = sdlWebview->rmlCreateDataModel("animals")) {
-            constructor.Bind("show_text", &showText);
-            constructor.Bind("animal", &animal);
+        if(auto dmc = sdlWebview->rmlCreateDataModel("animals")) {
+            dmc.Bind("show_text", &showText);
+            dmc.Bind("animal", &animal);
         }
         //Load document
-        Rml::ElementDocument* doc = sdlWebview->rmlLoadDocument("hello_world.html");
-        //Customize
+        auto doc = sdlWebview->rmlLoadDocument("hello_world.html");
+        //Update elements thru DOM
         Rml::Element* element = doc->GetElementById("world");
         element->SetInnerRML(reinterpret_cast<const char*>(u8"🌍"));
         element->SetProperty("font-size", "1.5em");
-    } else {
-        //Load document
-        sdlWebview->rmlLoadDocument("hello_world.html");
     }
 
 
