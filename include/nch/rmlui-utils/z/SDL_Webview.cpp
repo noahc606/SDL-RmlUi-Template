@@ -35,11 +35,17 @@ SDL_Webview::SDL_Webview(std::string rmlCtxID, Vec2i dimensions)
         Log::errorv(__PRETTY_FUNCTION__, "Rml::CreateContext", "Failed to create RmlUi context \"%s\"", rmlCtxID.c_str());
     }
 
+    
+
     webTex = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, dimensions.x, dimensions.y);
 }
 SDL_Webview::~SDL_Webview()
 {
-    rmlContext->UnloadDocument(workingDocument);
+    if(rmlContext!=nullptr) {
+        rmlContext->UnloadDocument(workingDocument);
+        rmlContext = nullptr;
+    }
+
     workingDocument = nullptr;
     workingDocumentPath = "???null???";
 
@@ -156,10 +162,6 @@ Rml::DataModelConstructor SDL_Webview::rmlCreateDataModel(std::string name, Rml:
     rmlContext->RemoveDataModel(name);
     return rmlContext->CreateDataModel(name, dataTypeRegister);
 }
-Rml::DataModelConstructor SDL_Webview::getWorkingDataModel(std::string name) {
-    return rmlContext->GetDataModel(name);
-}
-
 Rml::ElementDocument* SDL_Webview::rmlLoadDocumentByAbsolutePath(std::string webAssetPath) {
     /* Validation */
     if(!rmlInitialized) {
@@ -190,10 +192,18 @@ Rml::ElementDocument* SDL_Webview::rmlLoadDocument(std::string webAsset) {
     return rmlLoadDocumentByAbsolutePath(sdlBasePath+"/"+webAssetsSubpath+"/web_assets/"+webAsset);
 }
 
-Rml::ElementDocument* SDL_Webview::getWorkingDocument() {
-    return workingDocument;
+void SDL_Webview::resize(Vec2i dimensions)
+{
+    //Change variable
+    dims = dimensions;
+    //Resize context
+    rmlContext->SetDimensions({dims.x, dims.y});
+    //Resize texture (recreate)
+    if(webTex!=nullptr) {
+        SDL_DestroyTexture(webTex);    
+        webTex = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, dims.x, dims.y);
+    }
 }
-
 void SDL_Webview::reload()
 {
     /* Validation */
@@ -205,7 +215,14 @@ void SDL_Webview::reload()
     Timer tim("webpage reload", loggingEnabled);
     rmlLoadDocumentByAbsolutePath(workingDocumentPath);
 }
-
 void SDL_Webview::setLogging(bool loggingEnabled) {
     SDL_Webview::loggingEnabled = loggingEnabled;
+}
+
+
+Rml::DataModelConstructor SDL_Webview::getWorkingDataModel(std::string name) {
+    return rmlContext->GetDataModel(name);
+}
+Rml::ElementDocument* SDL_Webview::getWorkingDocument() {
+    return workingDocument;
 }

@@ -20,11 +20,13 @@ public:
     Rml::DataModelConstructor rmlCreateDataModel(std::string name, Rml::DataTypeRegister* dataTypeRegister = nullptr);
     Rml::ElementDocument* rmlLoadDocumentByAbsolutePath(std::string webAssetPath);
     Rml::ElementDocument* rmlLoadDocument(std::string webAsset);
-    
-    Rml::DataModelConstructor getWorkingDataModel(std::string name);
-    Rml::ElementDocument* getWorkingDocument();
+    void resize(nch::Vec2i dimensions);
     void reload();
     static void setLogging(bool shouldLog);
+
+    Rml::DataModelConstructor getWorkingDataModel(std::string name);
+    Rml::ElementDocument* getWorkingDocument();
+
 
 private:
     static SDL_Renderer* sdlRenderer;
