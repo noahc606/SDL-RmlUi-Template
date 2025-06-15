@@ -112,10 +112,10 @@ void SDL_Webview::tick()
 
     //Mouse clicking
     for(int i = 0; i<3; i++) {
-        if(Input::mouseDownTime(i)==1) {
+        if(Input::mouseDownTime(i+1)==1) {
             rmlContext->ProcessMouseButtonDown(i, 0);
             rmlContext->GetHoverElement()->Focus();
-        } else if(!Input::isMouseDown(i)) {
+        } else if(!Input::isMouseDown(i+1)) {
             rmlContext->ProcessMouseButtonUp(i, 0);
         }
     }
