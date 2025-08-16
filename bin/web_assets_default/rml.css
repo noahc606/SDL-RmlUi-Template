@@ -1,31 +1,33 @@
 /*
 * Default styles for all the basic elements.
 */
-
 body {
-    font-family: LatoLatin;
+    font-family: Lato;
     font-size: 18px;
     color: #000000;
     background: #ffffff;
 }
 
-div
-{
+div {
 	display: block;
 }
 
-p
-{
+p {
 	display: block;
 }
 
-h1
-{
+a {
+	text-decoration: underline;
+}
+a:hover {
+	cursor: pointer;
+}
+
+h1 {
 	display: block;
 }
 
-em
-{
+em {
 	font-style: italic;
 }
 

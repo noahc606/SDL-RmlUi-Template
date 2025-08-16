@@ -32,7 +32,7 @@ void tick() {
 
     //Dynamic customization every 1s
     std::vector<std::string> animals = { "dog", "cat", "lion", "giraffe", "horse", "goat", "pig", "cow" };
-    if(ticksPassed%60==0) {        
+    if(ticksPassed%300==0) {        
         //Update data
         bool showText = true;
         std::string animal = animals[(ticksPassed/60)%(animals.size())];
@@ -73,7 +73,7 @@ int main(int argc, char** argv)
         int imgFlags = IMG_INIT_PNG;
         assert(IMG_Init(imgFlags)==imgFlags);
         //SDL_Webview (RmlUi wrapper)
-        SDL_Webview::rmlGlobalInit(sdlRenderer);
+        SDL_Webview::rmlGlobalInit(sdlRenderer, basePath);
         sdlWebview = new SDL_Webview("main", Vec2i(640, 480));
     }
 
@@ -87,7 +87,7 @@ int main(int argc, char** argv)
             dmc.Bind("animal", &animal);
         }
         //Load document
-        auto doc = sdlWebview->rmlLoadDocument("hello_world.html");
+        auto doc = sdlWebview->rmlLoadDocumentAsset("hello_world.html");
         //Update elements thru DOM
         Rml::Element* element = doc->GetElementById("world");
         element->SetInnerRML(reinterpret_cast<const char*>(u8"🌍"));

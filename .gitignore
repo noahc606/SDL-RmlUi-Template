@@ -1,4 +1,6 @@
+.cache
 /build
 /build-emscripten
 /build-release
+/include/nch
 build-emscripten.sh

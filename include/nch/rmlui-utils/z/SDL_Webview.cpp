@@ -1,25 +1,35 @@
 #include "SDL_Webview.h"
 #include <RmlUi/Core.h>
+#include <SDL2/SDL_blendmode.h>
+#include <SDL2/SDL_events.h>
+#include <SDL2/SDL_keyboard.h>
+#include <SDL2/SDL_keycode.h>
+#include <SDL2/SDL_render.h>
+#include <SDL2/SDL_stdinc.h>
 #include <nch/cpp-utils/log.h>
 #include <nch/cpp-utils/timer.h>
 #include <nch/sdl-utils/input.h>
 #include <nch/sdl-utils/rect.h>
-#include "RmlUi_Platform_SDL.h"
-#include "RmlUi_Renderer_SDL.h"
+#include <nch/sdl-utils/texture-utils.h>
+
 
 using namespace nch;
 
+bool SDL_Webview::rmlInitialized = false;
 SDL_Renderer* SDL_Webview::sdlRenderer = nullptr;
 std::string SDL_Webview::sdlBasePath = "???null???";
 std::string SDL_Webview::webAssetsSubpath = "???null???";
 bool SDL_Webview::loggingEnabled = true;
-
-bool rmlInitialized = false;
-SystemInterface_SDL* sdlSystemInterface = nullptr;
-RenderInterface_SDL* sdlRenderInterface = nullptr;
-std::string workingDocumentPath = "???null???";
-Rml::ElementDocument* workingDocument = nullptr;
-
+SystemInterface_SDL* SDL_Webview::sdlSystemInterface = nullptr;
+RenderInterface_SDL* SDL_Webview::sdlRenderInterface = nullptr;
+std::set<SDL_Keycode> SDL_Webview::specialKeys = {
+    SDLK_BACKSPACE, SDLK_RETURN, SDLK_KP_ENTER,
+    SDLK_PAGEUP, SDLK_PAGEDOWN,
+SDLK_END, SDLK_HOME,
+SDLK_LEFT, SDLK_UP, SDLK_RIGHT, SDLK_DOWN,
+SDLK_INSERT, SDLK_DELETE,
+    SDLK_KP_4, SDLK_KP_8, SDLK_KP_6, SDLK_KP_2, SDLK_KP_0, SDLK_KP_PERIOD
+};
 
 SDL_Webview::SDL_Webview(std::string rmlCtxID, Vec2i dimensions)
 {
@@ -38,6 +48,7 @@ SDL_Webview::SDL_Webview(std::string rmlCtxID, Vec2i dimensions)
     
 
     webTex = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, dimensions.x, dimensions.y);
+    TexUtils::clearTexture(sdlRenderer, webTex);
 }
 SDL_Webview::~SDL_Webview()
 {
@@ -53,7 +64,7 @@ SDL_Webview::~SDL_Webview()
     SDL_DestroyTexture(webTex);
 }
 
-void SDL_Webview::rmlGlobalInit(SDL_Renderer* sdlRenderer, std::string webAssetsSubpath)
+void SDL_Webview::rmlGlobalInit(SDL_Renderer* p_sdlRenderer, std::string p_sdlBasePath, std::string p_webAssetsSubpath)
 {
     if(rmlInitialized) {
         Log::warn(__PRETTY_FUNCTION__, "RmlUi is already globally initialized");
@@ -68,26 +79,27 @@ void SDL_Webview::rmlGlobalInit(SDL_Renderer* sdlRenderer, std::string webAssets
             return;
         }
         //Subsystems init
-        SDL_Webview::sdlRenderer = sdlRenderer;
-        SDL_Webview::sdlBasePath = SDL_GetBasePath();
-        SDL_Webview::webAssetsSubpath = webAssetsSubpath;
-        sdlRenderInterface = new RenderInterface_SDL(SDL_Webview::sdlRenderer);
+        sdlRenderer = p_sdlRenderer;
+        sdlBasePath = p_sdlBasePath;
+        webAssetsSubpath = p_webAssetsSubpath;
+        sdlRenderInterface = new RenderInterface_SDL(sdlRenderer);
         Rml::SetRenderInterface(sdlRenderInterface);
         sdlSystemInterface = new SystemInterface_SDL();
         Rml::SetSystemInterface(sdlSystemInterface);
         //Load basic assets
-        rmlGloballyLoadFont(sdlBasePath+"/"+webAssetsSubpath+"/web_assets_default/LatoLatin-Regular.ttf");
-        rmlGloballyLoadFont(sdlBasePath+"/"+webAssetsSubpath+"/web_assets_default/NotoEmoji-Regular.ttf", true);
+
+        std::string prefix = sdlBasePath+"/"+webAssetsSubpath+"/web_assets_default/";
+        rmlGloballyLoadFontAbsolute(prefix+"Lato/Lato-Regular.ttf");
+        rmlGloballyLoadFontAbsolute(prefix+"Lato/Lato-Italic.ttf");
+        rmlGloballyLoadFontAbsolute(prefix+"Lato/Lato-Bold.ttf");
+        rmlGloballyLoadFontAbsolute(prefix+"NotoEmoji-Regular.ttf", true);
     }
 
     rmlInitialized = true;
 }
 
-void SDL_Webview::rmlGloballyLoadFont(std::string absolutePath, bool fallback)
-{
-    if(!Rml::LoadFontFace(absolutePath, fallback)) {
-        Log::errorv(__PRETTY_FUNCTION__, "Rml::LoadFontFace", "Failed to load font @ \"%s\"", absolutePath.c_str());
-    }
+void SDL_Webview::rmlGloballyLoadFontAsset(std::string fontAssetPath, bool fallback) {
+    rmlGloballyLoadFontAbsolute(sdlBasePath+"/"+webAssetsSubpath+"/web_assets/"+fontAssetPath);
 }
 
 void SDL_Webview::rmlGlobalShutdown()
@@ -114,16 +126,29 @@ void SDL_Webview::tick()
     for(int i = 0; i<3; i++) {
         if(Input::mouseDownTime(i+1)==1) {
             rmlContext->ProcessMouseButtonDown(i, 0);
-            rmlContext->GetHoverElement()->Focus();
+            Rml::Element* hovElem = rmlContext->GetHoverElement();
+            if(hovElem!=nullptr) {
+                hovElem->Focus();
+            }
         } else if(!Input::isMouseDown(i+1)) {
             rmlContext->ProcessMouseButtonUp(i, 0);
         }
     }
 
+    //Mouse scrolling
+    int mwd = Input::getMouseWheelDelta();
+    if(mwd!=0) {
+        rmlContext->ProcessMouseWheel({0, -(float)mwd}, 0);
+    }
+
     //Update context
-	rmlContext->Update();
+	update();
 
 	lastMousePos = mousePos;
+}
+void SDL_Webview::update()
+{
+    rmlContext->Update();
 }
 
 void SDL_Webview::render()
@@ -139,20 +164,37 @@ void SDL_Webview::drawCopy(Vec2i pos)
 {
     Rect dst(pos.x, pos.y, dims.x, dims.y);
     
-    SDL_SetRenderDrawBlendMode(sdlRenderer, SDL_BLENDMODE_BLEND);
-    SDL_SetRenderDrawColor(sdlRenderer, 255, 255, 255, 255);
-    SDL_RenderFillRect(sdlRenderer, &dst.r);
-    
+    SDL_SetTextureBlendMode(webTex, SDL_BLENDMODE_BLEND);
     SDL_RenderCopy(sdlRenderer, webTex, NULL, &dst.r);
 }
 
 void SDL_Webview::events(SDL_Event& evt)
 {
+    if(evt.type==SDL_KEYDOWN || evt.type==SDL_TEXTINPUT) {
+        //Cancel keydown/textinput in certain cases ("readonly" input elements)
+        Rml::Element* focusedElem = rmlContext->GetFocusElement();
+        if(focusedElem==nullptr) return;
+        std::string focusedTag = focusedElem->GetTagName();
+        if(focusedTag=="input" || focusedTag=="textarea") {
+            if(focusedElem->HasAttribute("readonly")) return;
+        }
+    }
+
     switch(evt.type) {
         case SDL_KEYDOWN: {
-            
+            SDL_Keycode kc = evt.key.keysym.sym;
+            SDL_Keymod modState = SDL_GetModState();
+            if(specialKeys.find(kc)!=specialKeys.end()) {
+                if (modState & KMOD_NUM) {
+                    rmlContext->ProcessKeyDown(RmlSDL::ConvertKey(kc), Rml::Input::KM_NUMLOCK);
+                } else {
+                    //numlock off
+                    rmlContext->ProcessKeyDown(RmlSDL::ConvertKey(kc), 0);
+                }
+            }
         } break;
         case SDL_TEXTINPUT: {
+            //Process text input by this point
             rmlContext->ProcessTextInput(evt.text.text);
         } break;
     }
@@ -162,47 +204,23 @@ Rml::DataModelConstructor SDL_Webview::rmlCreateDataModel(std::string name, Rml:
     rmlContext->RemoveDataModel(name);
     return rmlContext->CreateDataModel(name, dataTypeRegister);
 }
-Rml::ElementDocument* SDL_Webview::rmlLoadDocumentByAbsolutePath(std::string webAssetPath) {
-    /* Validation */
-    if(!rmlInitialized) {
-        Log::warnv(__PRETTY_FUNCTION__, "returning nullptr", "RmlUi is not initialized (did you call SDL_Webview::rmlGlobalInit()?)");
-        return nullptr;
-    }
 
-    /* Load */
-    //Unload old document
-    if(workingDocument!=nullptr) {
-        rmlContext->UnloadDocument(workingDocument);
-        rmlContext->Update();    
-    }
-    //Load new document
-    workingDocument = rmlContext->LoadDocument(webAssetPath);
-    if(workingDocument==nullptr) {
-        Log::errorv(__PRETTY_FUNCTION__, "Rml::Context::LoadDocument", "Failed to load webpage at path \"%s\"", webAssetPath.c_str());
-        return nullptr;
-    }
-    //Successful load by this point
-    workingDocumentPath = webAssetPath;
-    workingDocument->Show();
-    workingDocument->ReloadStyleSheet();
-    return workingDocument;
-    
-}
-Rml::ElementDocument* SDL_Webview::rmlLoadDocument(std::string webAsset) {
-    return rmlLoadDocumentByAbsolutePath(sdlBasePath+"/"+webAssetsSubpath+"/web_assets/"+webAsset);
+Rml::ElementDocument* SDL_Webview::rmlLoadDocumentAsset(std::string webdocAssetPath) {
+    return rmlLoadDocumentAbsolute(sdlBasePath+"/"+webAssetsSubpath+"/web_assets/"+webdocAssetPath);
 }
 
-void SDL_Webview::resize(Vec2i dimensions)
+bool SDL_Webview::resize(Vec2i dimensions)
 {
-    //Change variable
+    //Do nothing if dimensions weren't changed
+    if(dimensions==dims) return false;
+    //Resize variable, resize RML context, and recreate texture
     dims = dimensions;
-    //Resize context
     rmlContext->SetDimensions({dims.x, dims.y});
-    //Resize texture (recreate)
     if(webTex!=nullptr) {
         SDL_DestroyTexture(webTex);    
         webTex = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, dims.x, dims.y);
     }
+    return true;
 }
 void SDL_Webview::reload()
 {
@@ -213,10 +231,10 @@ void SDL_Webview::reload()
     }
 
     Timer tim("webpage reload", loggingEnabled);
-    rmlLoadDocumentByAbsolutePath(workingDocumentPath);
+    rmlLoadDocumentAbsolute(workingDocumentPath);
 }
-void SDL_Webview::setLogging(bool loggingEnabled) {
-    SDL_Webview::loggingEnabled = loggingEnabled;
+void SDL_Webview::setLogging(bool shouldLog) {
+    loggingEnabled = shouldLog;
 }
 
 
@@ -225,4 +243,36 @@ Rml::DataModelConstructor SDL_Webview::getWorkingDataModel(std::string name) {
 }
 Rml::ElementDocument* SDL_Webview::getWorkingDocument() {
     return workingDocument;
+}
+
+void SDL_Webview::rmlGloballyLoadFontAbsolute(std::string fontAbsolutePath, bool fallback) {
+    if(!Rml::LoadFontFace(fontAbsolutePath, fallback)) {
+        Log::errorv(__PRETTY_FUNCTION__, "Rml::LoadFontFace", "Failed to load font @ \"%s\"", fontAbsolutePath.c_str());
+    }
+}
+Rml::ElementDocument* SDL_Webview::rmlLoadDocumentAbsolute(std::string webdocAbsolutePath) {
+    /* Validation */
+    if(!rmlInitialized) {
+        Log::warnv(__PRETTY_FUNCTION__, "returning nullptr", "RmlUi is not initialized (did you call SDL_Webview::rmlGlobalInit()?)");
+        return nullptr;
+    }
+
+    /* Load */
+    //Unload old document
+    if(workingDocument!=nullptr) {
+        rmlContext->UnloadDocument(workingDocument);
+        rmlContext->Update();
+    }
+    //Load new document
+    workingDocument = rmlContext->LoadDocument(webdocAbsolutePath);
+    if(workingDocument==nullptr) {
+        Log::errorv(__PRETTY_FUNCTION__, "Rml::Context::LoadDocument", "Failed to load webpage at path \"%s\"", webdocAbsolutePath.c_str());
+        return nullptr;
+    }
+    //Successful load by this point
+    workingDocumentPath = webdocAbsolutePath;
+    workingDocument->Show();
+    workingDocument->ReloadStyleSheet();
+    return workingDocument;
+    
 }
