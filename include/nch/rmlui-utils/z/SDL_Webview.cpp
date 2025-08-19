@@ -211,8 +211,9 @@ Rml::ElementDocument* SDL_Webview::rmlLoadDocumentAsset(std::string webdocAssetP
 
 bool SDL_Webview::resize(Vec2i dimensions)
 {
-    //Do nothing if dimensions weren't changed
+    //Do nothing if dimensions weren't changed or dimensions invalid
     if(dimensions==dims) return false;
+    if(dimensions.x<1 || dimensions.y<1) return false;
     //Resize variable, resize RML context, and recreate texture
     dims = dimensions;
     rmlContext->SetDimensions({dims.x, dims.y});
