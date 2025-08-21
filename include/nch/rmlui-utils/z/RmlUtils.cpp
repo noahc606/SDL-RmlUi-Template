@@ -8,6 +8,6 @@ Box2f RmlUtils::getElementBox(Rml::Element* elem)
         elem->GetAbsoluteLeft,
         elem->GetAbsoluteTop,
         elem->GetBox().GetSize().x,
-        elem->GetBox().GetSize().y,
+                 elem->GetBox().GetSize().y,
     );
 }
