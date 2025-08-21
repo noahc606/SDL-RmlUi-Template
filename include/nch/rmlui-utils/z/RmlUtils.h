@@ -1,9 +1,9 @@
 #pragma once
 #include <RmlUi/Core/Element.h>
-#include <nch/math-utils/box2.h>
+#include <nch/sdl-utils/rect.h>
 
 namespace nch { class RmlUtils {
 public:
-    nch::Box2f getElementBox(Rml::Element* elem);
+    static nch::FRect getElementBox(Rml::Element* elem);
 private:
 }; }
