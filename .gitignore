@@ -2,5 +2,7 @@
 /build
 /build-emscripten
 /build-release
-/include/nch
+/include/nch/cpp-utils
+/include/nch/math-utils
+/include/nch/sdl-utils
 build-emscripten.sh
