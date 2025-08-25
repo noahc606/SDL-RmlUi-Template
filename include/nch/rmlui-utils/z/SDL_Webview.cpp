@@ -52,15 +52,16 @@ SDL_Webview::SDL_Webview(std::string rmlCtxID, Vec2i dimensions)
 }
 SDL_Webview::~SDL_Webview()
 {
-    if(rmlContext!=nullptr) {
+    if(rmlContext!=nullptr && workingDocument!=nullptr) {
         rmlContext->UnloadDocument(workingDocument);
+        workingDocument = nullptr;
+    }
+    if(rmlContext!=nullptr) {
+        Rml::RemoveContext(rmlCtxID);
         rmlContext = nullptr;
     }
 
-    workingDocument = nullptr;
     workingDocumentPath = "???null???";
-
-    Rml::RemoveContext(rmlCtxID);
     SDL_DestroyTexture(webTex);
 }
 
