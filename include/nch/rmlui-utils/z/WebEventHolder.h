@@ -8,6 +8,7 @@ public:
     public:
         std::queue<WebEvent>* webEvents;
         WebEvent::WebEventType webEvtType;
+        
         GenListener(std::queue<WebEvent>* webEvents, WebEvent::WebEventType webEvtType) {
             GenListener::webEvents = webEvents;
             GenListener::webEvtType = webEvtType;

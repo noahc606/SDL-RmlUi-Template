@@ -15,6 +15,8 @@ WebEventHolder::~WebEventHolder() {
 
 void WebEventHolder::trackEvent(WebEvent::WebEventType webEvtType, Rml::Element* elem)
 {
+    if(elem==nullptr) return;
+
     std::string evtName = WebEvent::getTypeName(webEvtType);
     if(evtName!="???null???") {
         elem->AddEventListener(evtName, new GenListener(webEvents, webEvtType));

@@ -9,11 +9,13 @@
 
 namespace nch { class SDL_Webview {
 public:
-    SDL_Webview(std::string rmlCtxID, nch::Vec2i dimensions);
+    SDL_Webview(std::string rmlCtxID, nch::Vec2i dimensions = {1, 1});
+    SDL_Webview();
     ~SDL_Webview();
     static void rmlGlobalInit(SDL_Renderer* p_sdlRenderer, std::string p_sdlBasePath, std::string p_webAssetsSubpath = "");
     static void rmlGloballyLoadFontAsset(std::string fontAssetPath, bool fallback = false);
     static void rmlGlobalShutdown();
+    void initContext(std::string rmlCtxID);
 
     void tick(); void update();
     void render();
@@ -33,6 +35,7 @@ public:
 private:
     static void rmlGloballyLoadFontAbsolute(std::string fontAbsolutePath, bool fallback = false);
     Rml::ElementDocument* rmlLoadDocumentAbsolute(std::string webdocAbsolutePath);
+    void updateResizingBody();
     
     static bool rmlInitialized;
     static SDL_Renderer* sdlRenderer;
@@ -46,7 +49,7 @@ private:
     std::string workingDocumentPath = "???null???";
     Rml::ElementDocument* workingDocument = nullptr;    
     std::string rmlCtxID = "???null???";    Rml::Context* rmlContext = nullptr;
-    SDL_Texture* webTex = nullptr;          nch::Vec2i dims = {-1, -1};
+    SDL_Texture* webTex = nullptr;          nch::Vec2i dims = {1, 1};
     nch::Vec2i lastMousePos = {-1, -1};
 
 

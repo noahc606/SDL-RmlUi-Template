@@ -1,4 +1,5 @@
 #include "RmlUtils.h"
+#include "Element.h"
 using namespace nch;
 
 FRect RmlUtils::getElementBox(Rml::Element* elem)
@@ -11,3 +12,13 @@ FRect RmlUtils::getElementBox(Rml::Element* elem)
         elem->GetBox().GetSize().y
     );
 }
+
+std::string RmlUtils::getElementAttributeValue(Rml::Element* elem, std::string attrName)
+{
+    Rml::Variant* attVal = elem->GetAttribute(attrName);
+    if(attVal!=nullptr) {
+        return attVal->Get<std::string>();
+    }
+    return "???null???";
+}
+

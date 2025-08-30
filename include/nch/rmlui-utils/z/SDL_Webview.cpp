@@ -11,6 +11,7 @@
 #include <nch/sdl-utils/input.h>
 #include <nch/sdl-utils/rect.h>
 #include <nch/sdl-utils/texture-utils.h>
+#include <sstream>
 
 
 using namespace nch;
@@ -31,25 +32,12 @@ SDLK_INSERT, SDLK_DELETE,
     SDLK_KP_4, SDLK_KP_8, SDLK_KP_6, SDLK_KP_2, SDLK_KP_0, SDLK_KP_PERIOD
 };
 
-SDL_Webview::SDL_Webview(std::string rmlCtxID, Vec2i dimensions)
+SDL_Webview::SDL_Webview(std::string p_rmlCtxID, Vec2i dimensions)
 {
-    if(!rmlInitialized) {
-        Log::warnv(__PRETTY_FUNCTION__, "doing nothing", "RmlUi is not initialized (did you call SDL_Webview::rmlGlobalInit()?)");
-        return;
-    }
-
-    SDL_Webview::rmlCtxID = rmlCtxID;
     SDL_Webview::dims = dimensions;
-    rmlContext = Rml::CreateContext(rmlCtxID, Rml::Vector2i(dimensions.x, dimensions.y));
-    if(rmlContext==nullptr) {
-        Log::errorv(__PRETTY_FUNCTION__, "Rml::CreateContext", "Failed to create RmlUi context \"%s\"", rmlCtxID.c_str());
-    }
-
-    
-
-    webTex = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, dimensions.x, dimensions.y);
-    TexUtils::clearTexture(sdlRenderer, webTex);
+    initContext(p_rmlCtxID);
 }
+SDL_Webview::SDL_Webview(){}
 SDL_Webview::~SDL_Webview()
 {
     if(rmlContext!=nullptr && workingDocument!=nullptr) {
@@ -63,6 +51,28 @@ SDL_Webview::~SDL_Webview()
 
     workingDocumentPath = "???null???";
     SDL_DestroyTexture(webTex);
+}
+
+void SDL_Webview::initContext(std::string p_rmlCtxID)
+{
+    if(!rmlInitialized) {
+        Log::warnv(__PRETTY_FUNCTION__, "doing nothing", "RmlUi is not initialized (did you call SDL_Webview::rmlGlobalInit()?)");
+        return;
+    }
+    if(rmlCtxID!="???null???") {
+        Log::warnv(__PRETTY_FUNCTION__, "doing nothing", "This webview context was already initialized (already called initContext() with this object)");
+        return;
+    }
+
+    //Set context ID, create RML context
+    SDL_Webview::rmlCtxID = p_rmlCtxID;
+    rmlContext = Rml::CreateContext(rmlCtxID, Rml::Vector2i(dims.x, dims.y));
+    if(rmlContext==nullptr) {
+        Log::errorv(__PRETTY_FUNCTION__, "Rml::CreateContext", "Failed to create RmlUi context \"%s\"", rmlCtxID.c_str());
+    }
+    //Create web texture
+    webTex = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, dims.x, dims.y);
+    TexUtils::clearTexture(sdlRenderer, webTex);
 }
 
 void SDL_Webview::rmlGlobalInit(SDL_Renderer* p_sdlRenderer, std::string p_sdlBasePath, std::string p_webAssetsSubpath)
@@ -165,7 +175,10 @@ void SDL_Webview::drawCopy(Vec2i pos)
 {
     Rect dst(pos.x, pos.y, dims.x, dims.y);
     
-    SDL_SetTextureBlendMode(webTex, SDL_BLENDMODE_BLEND);
+    int res = SDL_SetTextureBlendMode(webTex, SDL_BLENDMODE_BLEND);
+    if(res!=0) {
+        Log::errorv(__PRETTY_FUNCTION__, "SDL_SetTextureBlendMode()", SDL_GetError());
+    }
     SDL_RenderCopy(sdlRenderer, webTex, NULL, &dst.r);
 }
 
@@ -215,6 +228,7 @@ bool SDL_Webview::resize(Vec2i dimensions)
     //Do nothing if dimensions weren't changed or dimensions invalid
     if(dimensions==dims) return false;
     if(dimensions.x<1 || dimensions.y<1) return false;
+
     //Resize variable, resize RML context, and recreate texture
     dims = dimensions;
     rmlContext->SetDimensions({dims.x, dims.y});
@@ -222,6 +236,8 @@ bool SDL_Webview::resize(Vec2i dimensions)
         SDL_DestroyTexture(webTex);    
         webTex = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, dims.x, dims.y);
     }
+
+    updateResizingBody();
     return true;
 }
 void SDL_Webview::reload()
@@ -234,6 +250,7 @@ void SDL_Webview::reload()
 
     Timer tim("webpage reload", loggingEnabled);
     rmlLoadDocumentAbsolute(workingDocumentPath);
+    updateResizingBody();
 }
 void SDL_Webview::setLogging(bool shouldLog) {
     loggingEnabled = shouldLog;
@@ -277,4 +294,17 @@ Rml::ElementDocument* SDL_Webview::rmlLoadDocumentAbsolute(std::string webdocAbs
     workingDocument->ReloadStyleSheet();
     return workingDocument;
     
+}
+
+void SDL_Webview::updateResizingBody()
+{
+    if(workingDocument!=nullptr) {
+        auto eRBody = workingDocument->GetElementById("z-resizing-body");
+        if(eRBody!=nullptr) {
+            std::stringstream ss;
+            ss << "width: " << dims.x << "px; ";
+            ss << "height: " << dims.y << "px;";
+            eRBody->SetAttribute("style", ss.str());
+        }
+    }
 }

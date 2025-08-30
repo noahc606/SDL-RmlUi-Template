@@ -35,8 +35,8 @@ list (REMOVE_DUPLICATES PROJ_SRC_DIRS)
 
 ### Create Executable and add Links/Includes/DLLs ###
 # Add executable
-add_executable (${PROJ_OUT} ${PROJ_SOURCES})
-set_target_properties (${PROJ_OUT} PROPERTIES
+add_executable(${PROJ_OUT} ${PROJ_SOURCES})
+set_target_properties(${PROJ_OUT} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
 )
 
