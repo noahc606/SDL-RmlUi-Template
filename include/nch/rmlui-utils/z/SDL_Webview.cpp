@@ -166,6 +166,8 @@ void SDL_Webview::render()
 {   
     SDL_Texture* oldTgt = SDL_GetRenderTarget(sdlRenderer);
     SDL_SetRenderTarget(sdlRenderer, webTex); {
+        SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 0);
+        SDL_SetRenderDrawBlendMode(sdlRenderer, SDL_BLENDMODE_BLEND);
         SDL_RenderClear(sdlRenderer);
         rmlContext->Render();
     } SDL_SetRenderTarget(sdlRenderer, oldTgt);
