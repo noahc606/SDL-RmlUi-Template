@@ -3,6 +3,7 @@
 #include <RmlUi/Core/ElementDocument.h>
 #include <SDL2/SDL.h>
 #include <nch/math-utils/vec2.h>
+#include <nch/sdl-utils/rect.h>
 #include <set>
 #include "RmlUi_Platform_SDL.h"
 #include "RmlUi_Renderer_SDL.h"
@@ -17,8 +18,9 @@ public:
     static void rmlGlobalShutdown();
     void initContext(std::string rmlCtxID);
 
-    void tick(); void update();
+    void tick(nch::Vec2i pos = nch::Vec2i(0, 0)); void update();
     void render();
+    void drawCopy(nch::Rect dst, double alpha = 1.0);
     void drawCopy(nch::Vec2i pos);
     void events(SDL_Event& evt);
 
@@ -30,7 +32,7 @@ public:
 
     Rml::DataModelConstructor getWorkingDataModel(std::string name);
     Rml::ElementDocument* getWorkingDocument();
-
+    nch::Vec2i getDims() { return dims; }
 
 private:
     static void rmlGloballyLoadFontAbsolute(std::string fontAbsolutePath, bool fallback = false);

@@ -125,10 +125,10 @@ void SDL_Webview::rmlGlobalShutdown()
 }
 
 
-void SDL_Webview::tick()
+void SDL_Webview::tick(Vec2i pos)
 {
     //Mouse movement
-	Vec2i mousePos = { Input::getMouseX(), Input::getMouseY() };
+	Vec2i mousePos = { Input::getMouseX()-pos.x, Input::getMouseY()-pos.y };
 	if(lastMousePos!=Vec2i(-1, 1) && lastMousePos!=mousePos) {
 		rmlContext->ProcessMouseMove(mousePos.x, mousePos.y, 0);
 	}
@@ -173,15 +173,24 @@ void SDL_Webview::render()
     } SDL_SetRenderTarget(sdlRenderer, oldTgt);
 }
 
-void SDL_Webview::drawCopy(Vec2i pos)
+void SDL_Webview::drawCopy(Rect dst, double alpha)
 {
-    Rect dst(pos.x, pos.y, dims.x, dims.y);
-    
     int res = SDL_SetTextureBlendMode(webTex, SDL_BLENDMODE_BLEND);
     if(res!=0) {
         Log::errorv(__PRETTY_FUNCTION__, "SDL_SetTextureBlendMode()", SDL_GetError());
     }
+
+    if(alpha<0) alpha = 0;
+    if(alpha>1) alpha = 1;
+    SDL_SetTextureAlphaMod(webTex, (Uint8)(alpha*255));
     SDL_RenderCopy(sdlRenderer, webTex, NULL, &dst.r);
+    SDL_SetTextureAlphaMod(webTex, 255);
+}
+
+void SDL_Webview::drawCopy(Vec2i pos)
+{
+    Rect dst(pos.x, pos.y, dims.x, dims.y);
+    drawCopy(dst);
 }
 
 void SDL_Webview::events(SDL_Event& evt)
@@ -201,12 +210,8 @@ void SDL_Webview::events(SDL_Event& evt)
             SDL_Keycode kc = evt.key.keysym.sym;
             SDL_Keymod modState = SDL_GetModState();
             if(specialKeys.find(kc)!=specialKeys.end()) {
-                if (modState & KMOD_NUM) {
-                    rmlContext->ProcessKeyDown(RmlSDL::ConvertKey(kc), Rml::Input::KM_NUMLOCK);
-                } else {
-                    //numlock off
-                    rmlContext->ProcessKeyDown(RmlSDL::ConvertKey(kc), 0);
-                }
+                if(modState & KMOD_NUM) { rmlContext->ProcessKeyDown(RmlSDL::ConvertKey(kc), Rml::Input::KM_NUMLOCK); }
+                else                    { rmlContext->ProcessKeyDown(RmlSDL::ConvertKey(kc), 0); }
             }
         } break;
         case SDL_TEXTINPUT: {
