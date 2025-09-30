@@ -16,7 +16,7 @@ public:
         void ProcessEvent(Rml::Event& event) override {
             Rml::Element* target = event.GetTargetElement();
             if(webEvents!=nullptr) {
-                webEvents->push(WebEvent(webEvtType, target->GetId()));
+                webEvents->push(WebEvent(webEvtType, target->GetId(), target));
             }
         }
     };

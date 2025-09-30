@@ -19,7 +19,7 @@ public:
     };
 
     WebEvent();
-    WebEvent(WebEventType type, std::string elementID);
+    WebEvent(WebEventType type, std::string elementID, Rml::Element* element);
     ~WebEvent();
 
     bool exists();
@@ -28,8 +28,10 @@ public:
     std::string getTypeName();
     std::string toString();
     std::string getElementID();
+    Rml::Element* getElement();
 
 private:
     WebEventType type = NONE;
     std::string elementID = "";
+    Rml::Element* element = nullptr;
 }; }

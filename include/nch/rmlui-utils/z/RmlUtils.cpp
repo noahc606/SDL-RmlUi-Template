@@ -1,15 +1,18 @@
 #include "RmlUtils.h"
 #include "Element.h"
+#include <RmlUi/Core/Box.h>
 using namespace nch;
 
 FRect RmlUtils::getElementBox(Rml::Element* elem)
 {
     if(elem==nullptr) return FRect(-1,-1,-1,-1);
+    auto elemSize = elem->GetBox().GetSize(Rml::BoxArea::Border);
+    
     return FRect(
         elem->GetAbsoluteLeft(),
         elem->GetAbsoluteTop(),
-        elem->GetBox().GetSize().x,
-        elem->GetBox().GetSize().y
+        elemSize.x,
+        elemSize.y
     );
 }
 
