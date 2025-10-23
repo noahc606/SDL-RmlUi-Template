@@ -28,6 +28,8 @@ public:
     Rml::ElementDocument* rmlLoadDocumentAsset(std::string webdocAssetPath);
     bool resize(nch::Vec2i dimensions);
     void reload();
+    void injectClick(nch::Vec2i pos, int button = 1);
+    void injectScroll(nch::Vec2i delta);
     static void setLogging(bool shouldLog);
 
     Rml::DataModelConstructor getWorkingDataModel(std::string name);

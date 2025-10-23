@@ -1,11 +1,13 @@
 #pragma once
 #include <RmlUi/Core/Element.h>
 #include <nch/cpp-utils/log.h>
+#include <nch/math-utils/vec2.h>
 #include <nch/sdl-utils/rect.h>
+
 
 namespace nch { class RmlUtils {
 public:
-    static nch::FRect getElementBox(Rml::Element* elem);
+    static nch::FRect getElementBox(Rml::Element* elem, Vec2f offset = {0, 0});
     static std::string getElementAttributeValue(Rml::Element* elem, std::string attrName);
     template<typename ... T> static void setStyleFormatted(Rml::Element* elem, const std::string& styleFormat, T ... args) {
         //Nullptr check
@@ -28,5 +30,8 @@ public:
         //Set style attribute
         elem->SetAttribute("style", styleStr);
     };
+    static void setAttributes(Rml::ElementPtr& elem, const std::string& attrs);
+    static void appendChildRml(Rml::Element* eParent, const std::string& childRml);
+
 private:
 }; }

@@ -108,11 +108,9 @@ void SDL_Webview::rmlGlobalInit(SDL_Renderer* p_sdlRenderer, std::string p_sdlBa
 
     rmlInitialized = true;
 }
-
 void SDL_Webview::rmlGloballyLoadFontAsset(std::string fontAssetPath, bool fallback) {
     rmlGloballyLoadFontAbsolute(sdlBasePath+"/"+webAssetsSubpath+"/web_assets/"+fontAssetPath);
 }
-
 void SDL_Webview::rmlGlobalShutdown()
 {
     if(!rmlInitialized) {
@@ -149,7 +147,7 @@ void SDL_Webview::tick(Vec2i pos)
     //Mouse scrolling
     int mwd = Input::getMouseWheelDelta();
     if(mwd!=0) {
-        rmlContext->ProcessMouseWheel({0, -(float)mwd}, 0);
+        injectScroll({0, mwd});
     }
 
     //Update context
@@ -161,7 +159,6 @@ void SDL_Webview::update()
 {
     rmlContext->Update();
 }
-
 void SDL_Webview::render()
 {   
     SDL_Texture* oldTgt = SDL_GetRenderTarget(sdlRenderer);
@@ -186,7 +183,6 @@ void SDL_Webview::drawCopy(Rect dst, double alpha)
     SDL_RenderCopy(sdlRenderer, webTex, NULL, &dst.r);
     SDL_SetTextureAlphaMod(webTex, 255);
 }
-
 void SDL_Webview::drawCopy(Vec2i pos)
 {
     Rect dst(pos.x, pos.y, dims.x, dims.y);
@@ -258,6 +254,14 @@ void SDL_Webview::reload()
     Timer tim("webpage reload", loggingEnabled);
     rmlLoadDocumentAbsolute(workingDocumentPath);
     updateResizingBody();
+}
+void SDL_Webview::injectClick(nch::Vec2i pos, int button) {
+    rmlContext->ProcessMouseMove(pos.x, pos.y, 0);
+    rmlContext->ProcessMouseButtonDown(button-1, 0);
+    rmlContext->ProcessMouseButtonUp(button-1, 0);
+}
+void SDL_Webview::injectScroll(nch::Vec2i delta) {
+    rmlContext->ProcessMouseWheel({(float)delta.x, -(float)delta.y}, 0);
 }
 void SDL_Webview::setLogging(bool shouldLog) {
     loggingEnabled = shouldLog;
