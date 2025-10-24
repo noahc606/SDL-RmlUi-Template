@@ -31,6 +31,7 @@ public:
     void injectClick(nch::Vec2i pos, int button = 1);
     void injectScroll(nch::Vec2i delta);
     static void setLogging(bool shouldLog);
+    void setMouseDisabled(bool md);
 
     Rml::DataModelConstructor getWorkingDataModel(std::string name);
     Rml::ElementDocument* getWorkingDocument();
@@ -55,6 +56,6 @@ private:
     std::string rmlCtxID = "???null???";    Rml::Context* rmlContext = nullptr;
     SDL_Texture* webTex = nullptr;          nch::Vec2i dims = {1, 1};
     nch::Vec2i lastMousePos = {-1, -1};
-
+    bool mouseDisabled = false;
 
 }; }

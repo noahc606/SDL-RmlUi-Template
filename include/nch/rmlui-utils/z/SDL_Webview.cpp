@@ -125,30 +125,33 @@ void SDL_Webview::rmlGlobalShutdown()
 
 void SDL_Webview::tick(Vec2i pos)
 {
-    //Mouse movement
-	Vec2i mousePos = { Input::getMouseX()-pos.x, Input::getMouseY()-pos.y };
-	if(lastMousePos!=Vec2i(-1, 1) && lastMousePos!=mousePos) {
-		rmlContext->ProcessMouseMove(mousePos.x, mousePos.y, 0);
-	}
+    Vec2i mousePos = { Input::getMouseX()-pos.x, Input::getMouseY()-pos.y };
+    if(!mouseDisabled) {
+        //Mouse movement
+        if(lastMousePos!=Vec2i(-1, 1) && lastMousePos!=mousePos) {
+            rmlContext->ProcessMouseMove(mousePos.x, mousePos.y, 0);
+        }
 
-    //Mouse clicking
-    for(int i = 0; i<3; i++) {
-        if(Input::mouseDownTime(i+1)==1) {
-            rmlContext->ProcessMouseButtonDown(i, 0);
-            Rml::Element* hovElem = rmlContext->GetHoverElement();
-            if(hovElem!=nullptr) {
-                hovElem->Focus();
+        //Mouse clicking
+        for(int i = 0; i<3; i++) {
+            if(Input::mouseDownTime(i+1)==1) {
+                rmlContext->ProcessMouseButtonDown(i, 0);
+                Rml::Element* hovElem = rmlContext->GetHoverElement();
+                if(hovElem!=nullptr) {
+                    hovElem->Focus();
+                }
+            } else if(!Input::isMouseDown(i+1)) {
+                rmlContext->ProcessMouseButtonUp(i, 0);
             }
-        } else if(!Input::isMouseDown(i+1)) {
-            rmlContext->ProcessMouseButtonUp(i, 0);
+        }
+
+        //Mouse scrolling
+        int mwd = Input::getMouseWheelDelta();
+        if(mwd!=0) {
+            injectScroll({0, mwd});
         }
     }
 
-    //Mouse scrolling
-    int mwd = Input::getMouseWheelDelta();
-    if(mwd!=0) {
-        injectScroll({0, mwd});
-    }
 
     //Update context
 	update();
@@ -266,7 +269,9 @@ void SDL_Webview::injectScroll(nch::Vec2i delta) {
 void SDL_Webview::setLogging(bool shouldLog) {
     loggingEnabled = shouldLog;
 }
-
+void SDL_Webview::setMouseDisabled(bool md) {
+    mouseDisabled = md;
+}
 
 Rml::DataModelConstructor SDL_Webview::getWorkingDataModel(std::string name) {
     return rmlContext->GetDataModel(name);
