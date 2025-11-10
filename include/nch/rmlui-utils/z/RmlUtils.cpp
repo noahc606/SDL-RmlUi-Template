@@ -5,10 +5,10 @@
 #include <regex>
 using namespace nch;
 
-FRect RmlUtils::getElementBox(Rml::Element* elem, Vec2f offset)
+FRect RmlUtils::getElementBox(Rml::Element* elem, Vec2f offset, Rml::BoxArea boxArea)
 {
     if(elem==nullptr) throw std::invalid_argument("Specified 'elem' is nullptr");
-    auto elemSize = elem->GetBox().GetSize(Rml::BoxArea::Border);
+    auto elemSize = elem->GetBox().GetSize(boxArea);
     
     return FRect(
         elem->GetAbsoluteLeft()+offset.x,

@@ -7,7 +7,7 @@
 
 namespace nch { class RmlUtils {
 public:
-    static nch::FRect getElementBox(Rml::Element* elem, Vec2f offset = {0, 0});
+    static nch::FRect getElementBox(Rml::Element* elem, Vec2f offset = {0, 0}, Rml::BoxArea boxArea = Rml::BoxArea::Border);
     static std::string getElementAttributeValue(Rml::Element* elem, std::string attrName);
     template<typename ... T> static void setStyleFormatted(Rml::Element* elem, const std::string& styleFormat, T ... args) {
         //Nullptr check
