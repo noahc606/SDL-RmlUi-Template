@@ -143,7 +143,7 @@ void SDL_Webview::tick()
     bool cancelMouse = false;
     if(mouseDisabled) cancelMouse = true;
     if(!cancelMouse) {
-        if(screenBox.contains(Input::getMouseX(), Input::getMouseY())) {
+        if(!screenBox.contains(Input::getMouseX(), Input::getMouseY())) {
             cancelMouse = true;
         }
     }
