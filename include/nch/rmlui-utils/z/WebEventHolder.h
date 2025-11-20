@@ -14,9 +14,10 @@ public:
             GenListener::webEvtType = webEvtType;
         }
         void ProcessEvent(Rml::Event& event) override {
-            Rml::Element* target = event.GetTargetElement();
             if(webEvents!=nullptr) {
-                webEvents->push(WebEvent(webEvtType, target->GetId(), target));
+                Rml::Element* target = event.GetTargetElement();
+                Rml::Dictionary parameters = event.GetParameters();
+                webEvents->push(WebEvent(webEvtType, target->GetId(), target, parameters));
             }
         }
     };

@@ -43,13 +43,11 @@ SDL_Webview::~SDL_Webview() { destroyContext(); }
 
 bool SDL_Webview::initContext(std::string p_rmlCtxID)
 {
-    if(rmlCtxID!="???null???") return false;
-
     if(!rmlInitialized) {
         Log::warnv(__PRETTY_FUNCTION__, "doing nothing", "RmlUi is not initialized (did you call SDL_Webview::rmlGlobalInit()?)");
         return false;
     }
-    if(rmlCtxID!="???null???") {
+    if(rmlContext!=nullptr) {
         Log::warnv(__PRETTY_FUNCTION__, "doing nothing", "This webview context was already initialized (already called initContext() with this object)");
         return false;
     }
@@ -137,7 +135,7 @@ void SDL_Webview::rmlGlobalShutdown()
 
 void SDL_Webview::tick()
 {
-
+    if(rmlContext==nullptr) return;
 
     Vec2i mousePos = { Input::getMouseX()-screenBox.r.x, Input::getMouseY()-screenBox.r.y+viewBox.r.y };
     bool cancelMouse = false;
@@ -192,10 +190,12 @@ void SDL_Webview::tick()
 }
 void SDL_Webview::update()
 {
+    if(rmlContext==nullptr) return;
     rmlContext->Update();
 }
 void SDL_Webview::render()
 {   
+    if(rmlContext==nullptr) return;
     SDL_Texture* oldTgt = SDL_GetRenderTarget(sdlRenderer);
     SDL_SetRenderTarget(sdlRenderer, webTex); {
         SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 0);
@@ -206,6 +206,8 @@ void SDL_Webview::render()
 }
 void SDL_Webview::drawCopyAt(Rect src, Rect dst, double alpha)
 {
+    if(rmlContext==nullptr) return;
+
     int res = SDL_SetTextureBlendMode(webTex, SDL_BLENDMODE_BLEND);
     if(res!=0) {
         Log::errorv(__PRETTY_FUNCTION__, "SDL_SetTextureBlendMode()", SDL_GetError());
@@ -242,6 +244,8 @@ void SDL_Webview::drawCopy()
 }
 void SDL_Webview::drawScrollbars()
 {
+    if(rmlContext==nullptr) return;
+
     Rect dst = screenBox;
     if(dst.r.h>dims.y) { dst.r.h = dims.y; }
     if(dst.r.w>dims.x) { dst.r.w = dims.x; }
@@ -272,6 +276,8 @@ void SDL_Webview::drawScrollbars()
 }
 void SDL_Webview::events(SDL_Event& evt)
 {
+    if(rmlContext==nullptr) return;
+
     if(evt.type==SDL_KEYDOWN || evt.type==SDL_TEXTINPUT) {
         //Cancel keydown/textinput in certain cases ("readonly" input elements)
         Rml::Element* focusedElem = rmlContext->GetFocusElement();
@@ -311,7 +317,7 @@ Rml::ElementDocument* SDL_Webview::rmlLoadDocumentAsset(std::string webdocAssetP
 void SDL_Webview::reload()
 {
     /* Validation */
-    if(workingDocument==nullptr || workingDocumentPath=="???null???") {
+    if(rmlContext==nullptr || workingDocument==nullptr || workingDocumentPath=="???null???") {
         Log::warnv(__PRETTY_FUNCTION__, "doing nothing", "No document is currently loaded into this SDL_Webview");
         return;
     }

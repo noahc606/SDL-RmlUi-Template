@@ -10,6 +10,9 @@ public:
     static nch::FRect getElementBox(Rml::Element* elem, Vec2f offset = {0, 0}, Rml::BoxArea boxArea = Rml::BoxArea::Border);
     static std::string getElementAttributeValue(Rml::Element* elem, std::string attrName);
     template<typename ... T> static void setStyleFormatted(Rml::Element* elem, const std::string& styleFormat, T ... args) {
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wformat-security"
+        
         //Nullptr check
         if(elem==nullptr) {
             Log::warnv(__PRETTY_FUNCTION__, "making no changes", "Specified 'elem' is null");
@@ -29,6 +32,8 @@ public:
         }
         //Set style attribute
         elem->SetAttribute("style", styleStr);
+        
+        #pragma GCC diagnostic pop
     };
     static void setAttributes(Rml::ElementPtr& elem, const std::string& attrs);
     static void appendChildRml(Rml::Element* eParent, const std::string& childRml);

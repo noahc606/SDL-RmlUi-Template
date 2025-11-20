@@ -19,7 +19,7 @@ public:
     };
 
     WebEvent();
-    WebEvent(WebEventType type, std::string elementID, Rml::Element* element);
+    WebEvent(WebEventType type, std::string elementID, Rml::Element* element, const Rml::Dictionary& parameters);
     ~WebEvent();
 
     bool exists();
@@ -29,9 +29,11 @@ public:
     std::string toString();
     std::string getElementID();
     Rml::Element* getElement();
+    Rml::Dictionary getParameters();
 
 private:
     WebEventType type = NONE;
     std::string elementID = "";
     Rml::Element* element = nullptr;
+    Rml::Dictionary parameters;
 }; }

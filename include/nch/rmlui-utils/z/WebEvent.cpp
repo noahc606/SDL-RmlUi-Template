@@ -17,10 +17,11 @@ std::map<int, std::pair<std::string, std::string>> wetDescMap = {
 };
 
 WebEvent::WebEvent(){}
-WebEvent::WebEvent(WebEventType type, std::string elementID, Rml::Element* element) {
+WebEvent::WebEvent(WebEventType type, std::string elementID, Rml::Element* element, const Rml::Dictionary& parameters) {
     WebEvent::type = type;
     WebEvent::elementID = elementID;
     WebEvent::element = element;
+    WebEvent::parameters = parameters;
 }
 WebEvent::~WebEvent(){}
 
@@ -59,4 +60,7 @@ std::string WebEvent::getElementID() {
 }
 Rml::Element* WebEvent::getElement() {
     return element;
+}
+Rml::Dictionary WebEvent::getParameters() {
+    return parameters;
 }
