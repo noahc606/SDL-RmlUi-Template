@@ -173,16 +173,6 @@ void SDL_Webview::tick()
         }
     }
 
-    //Mouse scrolling
-    if(scrollEnabled) {
-        int mwd = Input::getMouseWheelDelta();
-        viewBox.r.y -= (mwd*scrollUnitY);
-        if(viewBox.y1()<0)       { viewBox.r.y = 0; }
-        if(viewBox.y2()>dims.y) { viewBox.r.y = dims.y-viewBox.r.h; }
-        if(viewBox.x1()<0)       { viewBox.r.x = 0; }
-        if(viewBox.x2()>dims.x) { viewBox.r.x = dims.x-viewBox.r.w; }
-    }
-
     //Update context
 	update();
 
@@ -381,6 +371,9 @@ void SDL_Webview::setScreenBox(Rect scrBox)
     viewBox.r.w = screenBox.r.w;
     viewBox.r.h = screenBox.r.h;
 }
+void SDL_Webview::setScrollDist(int scrollDist) {
+    SDL_Webview::scrollDist = scrollDist;
+}
 void SDL_Webview::resetScrollbar()
 {
     viewBox.r.y = 0;
@@ -393,6 +386,12 @@ void SDL_Webview::injectClick(nch::Vec2i pos, int button) {
 }
 void SDL_Webview::injectScroll(nch::Vec2i delta) {
     rmlContext->ProcessMouseWheel({(float)delta.x, -(float)delta.y}, 0);
+
+    viewBox.r.y -= (delta.y*scrollDist);
+    if(viewBox.y1()<0)       { viewBox.r.y = 0; }
+    if(viewBox.y2()>dims.y) { viewBox.r.y = dims.y-viewBox.r.h; }
+    if(viewBox.x1()<0)       { viewBox.r.x = 0; }
+    if(viewBox.x2()>dims.x) { viewBox.r.x = dims.x-viewBox.r.w; }
 }
 void SDL_Webview::setMouseDisabled(bool md) {
     mouseDisabled = md;
@@ -409,6 +408,9 @@ Vec2i SDL_Webview::getDims() {
 }
 Rect SDL_Webview::getScreenBox() {
     return screenBox;
+}
+nch::Vec2i SDL_Webview::getScroll() {
+    return { viewBox.r.x, viewBox.r.y };
 }
 
 void SDL_Webview::rmlGloballyLoadFontAbsolute(std::string fontAbsolutePath, bool fallback) {

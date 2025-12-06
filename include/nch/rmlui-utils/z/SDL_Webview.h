@@ -32,6 +32,7 @@ public:
     Rml::ElementDocument* getWorkingDocument();
     nch::Vec2i getDims();
     nch::Rect getScreenBox();
+    nch::Vec2i getScroll();
 
     static void setLogging(bool shouldLog);
     Rml::DataModelConstructor rmlCreateDataModel(std::string name, Rml::DataTypeRegister* dataTypeRegister = nullptr);
@@ -41,6 +42,7 @@ public:
     void setScreenPos(nch::Vec2i scrPos);
     void setScreenDims(nch::Vec2i scrDims);
     void setScreenBox(nch::Rect scrBox);
+    void setScrollDist(int scrollDist);
     void resetScrollbar();
     void injectClick(nch::Vec2i pos, int button = 1);
     void injectScroll(nch::Vec2i delta);
@@ -69,7 +71,7 @@ private:
     nch::Rect viewBox = {-1,-1,-1,-1};
     bool mouseDisabled = false;
     bool scrollEnabled = true;
-    int scrollUnitY = 26;
+    int scrollDist = 26;
 
 
 }; }
