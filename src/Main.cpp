@@ -13,7 +13,7 @@ using namespace nch;
 
 SDL_Renderer* sdlRenderer;
 std::string basePath;
-SDL_Webview* sdlWebview;
+SDL_Webview sdlWebview;
 uint64_t ticksPassed = 0;
 
 void draw() {
@@ -21,38 +21,31 @@ void draw() {
     SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 255);
     SDL_RenderFillRect(sdlRenderer, NULL);
 
-    sdlWebview->render();
-    sdlWebview->drawCopy({0, 0});
+    sdlWebview.render();
+    sdlWebview.drawCopy();
     SDL_RenderPresent(sdlRenderer);
 }
 void tick() {
-    sdlWebview->tick();
+    sdlWebview.tick();
 
     ticksPassed++;
 
     //Dynamic customization every 1s
     std::vector<std::string> animals = { "dog", "cat", "lion", "giraffe", "horse", "goat", "pig", "cow" };
     if(ticksPassed%300==0) {        
-        //Update data
-        bool showText = true;
-        std::string animal = animals[(ticksPassed/60)%(animals.size())];
-        if(auto dmc = sdlWebview->rmlCreateDataModel("animals")) {
-            dmc.Bind("show_text", &showText);
-            dmc.Bind("animal", &animal);
-        }
+        //Update DOM
+        Rml::Element* eWorld = sdlWebview.getWorkingDocument()->GetElementById("world");
+        eWorld->SetInnerRML(reinterpret_cast<const char*>(u8"🌍"));
+        eWorld->SetProperty("font-size", "1.5em");
 
-        //Data updates require reload, and reloads cause all DOM element updates until this point to be lost.
-        //Alternatively you could get away with using DOM element updates for everything.
-        sdlWebview->reload();
+        Rml::Element* eAnimal = sdlWebview.getWorkingDocument()->GetElementById("animal");
+        eAnimal->SetInnerRML(animals[(ticksPassed/60)%(animals.size())]);
 
-        //Re-add DOM we had at the beginning
-        Rml::Element* element = sdlWebview->getWorkingDocument()->GetElementById("world");
-        element->SetInnerRML(reinterpret_cast<const char*>(u8"🌍"));
-        element->SetProperty("font-size", "1.5em");
+        sdlWebview.update();
     }
 }
 void events(SDL_Event& evt) {
-    sdlWebview->events(evt);
+    sdlWebview.events(evt);
 }
 
 int main(int argc, char** argv)
@@ -74,31 +67,30 @@ int main(int argc, char** argv)
         assert(IMG_Init(imgFlags)==imgFlags);
         //SDL_Webview (RmlUi wrapper)
         SDL_Webview::rmlGlobalInit(sdlRenderer, basePath);
-        sdlWebview = new SDL_Webview("main", Vec2i(640, 480));
+        
+        if(sdlWebview.initContext()) {
+            sdlWebview.rmlLoadDocumentAsset("hello_world.html");
+            sdlWebview.resize({640, 480});
+            sdlWebview.setReloadUsingF5(true);
+        }
+        
     }
 
     /* Set data models, load, and customize web document */
     {
-        //Update elements thru data models
-        bool showText = true;
-        std::string animal = "dog";
-        if(auto dmc = sdlWebview->rmlCreateDataModel("animals")) {
-            dmc.Bind("show_text", &showText);
-            dmc.Bind("animal", &animal);
-        }
         //Load document
-        auto doc = sdlWebview->rmlLoadDocumentAsset("hello_world.html");
+        auto doc = sdlWebview.getWorkingDocument();
         //Update elements thru DOM
-        Rml::Element* element = doc->GetElementById("world");
-        element->SetInnerRML(reinterpret_cast<const char*>(u8"🌍"));
-        element->SetProperty("font-size", "1.5em");
+        Rml::Element* eWorld = doc->GetElementById("world");
+        eWorld->SetInnerRML(reinterpret_cast<const char*>(u8"🌍"));
+        eWorld->SetProperty("font-size", "1.5em");
     }
 
 
     //MainLoopDriver ('tick', 'draw', and 'events' funcs required to drive all SDL_Webviews)
 	MainLoopDriver mld(&tick, 60, &draw, 60, &events);
     //Cleanup
-    delete sdlWebview;
+    sdlWebview.destroyContext();
     SDL_Webview::rmlGlobalShutdown();
     return 0;
 }

@@ -7,6 +7,7 @@
 #include <SDL2/SDL_render.h>
 #include <SDL2/SDL_stdinc.h>
 #include <nch/cpp-utils/log.h>
+#include <nch/cpp-utils/string-utils.h>
 #include <nch/cpp-utils/timer.h>
 #include <nch/sdl-utils/input.h>
 #include <nch/sdl-utils/rect.h>
@@ -32,6 +33,7 @@ SDLK_INSERT, SDLK_DELETE,
     SDLK_KP_4, SDLK_KP_8, SDLK_KP_6, SDLK_KP_2, SDLK_KP_0, SDLK_KP_PERIOD
 };
 Vec2i SDL_Webview::maxDimSize = {4096, 4096};
+int SDL_Webview::globalContextCount = 0;
 
 SDL_Webview::SDL_Webview(std::string p_rmlCtxID, Vec2i dimensions)
 {
@@ -48,7 +50,6 @@ bool SDL_Webview::initContext(std::string p_rmlCtxID)
         return false;
     }
     if(rmlContext!=nullptr) {
-        Log::warnv(__PRETTY_FUNCTION__, "doing nothing", "This webview context was already initialized (already called initContext() with this object)");
         return false;
     }
 
@@ -64,8 +65,13 @@ bool SDL_Webview::initContext(std::string p_rmlCtxID)
     webTex = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, dims.x, dims.y);
     TexUtils::clearTexture(sdlRenderer, webTex);
     setScreenPos({0, 0});
+    globalContextCount++;
 
     return true;
+}
+bool SDL_Webview::initContext()
+{
+    return initContext(StringUtils::cat("zprivate-", globalContextCount));
 }
 void SDL_Webview::destroyContext()
 {
@@ -137,40 +143,48 @@ void SDL_Webview::tick()
 {
     if(rmlContext==nullptr) return;
 
-    Vec2i mousePos = { Input::getMouseX()-screenBox.r.x, Input::getMouseY()-screenBox.r.y+viewBox.r.y };
-    bool cancelMouse = false;
-    if(mouseDisabled) cancelMouse = true;
-    if(!cancelMouse) {
-        if(!screenBox.contains(Input::getMouseX(), Input::getMouseY())) {
-            cancelMouse = true;
-        }
-    }
-
-    if(!cancelMouse) {
-        //Mouse movement
-        if(lastMousePos!=Vec2i(-1, 1) && lastMousePos!=mousePos) {
-            rmlContext->ProcessMouseMove(mousePos.x, mousePos.y, 0);
-        }
-
-        //Mouse clicking
-        std::vector<int> buttons = { 1, 2, 3 };
-        for(auto i : buttons) {
-            if(Input::mouseDownTime(i)==1) {
-                rmlContext->ProcessMouseButtonDown(i-1, 0);
-                Rml::Element* hovElem = rmlContext->GetHoverElement();
-                if(hovElem!=nullptr) {
-                    hovElem->Focus();
-                }
-            } else if(!Input::isMouseDown(i)) {
-                rmlContext->ProcessMouseButtonUp(i-1, 0);
+    /* Mouse */
+    Vec2i mousePos; {
+        mousePos = { Input::getMouseX()-screenBox.r.x, Input::getMouseY()-screenBox.r.y+viewBox.r.y };
+        bool cancelMouse = false;
+        if(mouseDisabled) cancelMouse = true;
+        if(!cancelMouse) {
+            if(!screenBox.contains(Input::getMouseX(), Input::getMouseY())) {
+                cancelMouse = true;
             }
         }
 
-        //Mouse scrolling
-        int mwd = Input::getMouseWheelDelta();
-        if(mwd!=0) {
-            injectScroll({0, mwd});
+        if(!cancelMouse) {
+            //Mouse movement
+            if(lastMousePos!=Vec2i(-1, 1) && lastMousePos!=mousePos) {
+                rmlContext->ProcessMouseMove(mousePos.x, mousePos.y, 0);
+            }
+
+            //Mouse clicking
+            std::vector<int> buttons = { 1, 2, 3 };
+            for(auto i : buttons) {
+                if(Input::mouseDownTime(i)==1) {
+                    rmlContext->ProcessMouseButtonDown(i-1, 0);
+                    Rml::Element* hovElem = rmlContext->GetHoverElement();
+                    if(hovElem!=nullptr) {
+                        hovElem->Focus();
+                    }
+                } else if(!Input::isMouseDown(i)) {
+                    rmlContext->ProcessMouseButtonUp(i-1, 0);
+                }
+            }
+
+            //Mouse scrolling
+            int mwd = Input::getMouseWheelDelta();
+            if(mwd!=0) {
+                injectScroll({0, mwd});
+            }
         }
+    }
+
+    /* Reloading */
+    if(reloadUsingF5 && Input::keyDownTime(SDLK_F5)==1) {
+        reload();    
     }
 
     //Update context
@@ -297,10 +311,6 @@ void SDL_Webview::events(SDL_Event& evt)
 void SDL_Webview::setLogging(bool shouldLog) {
     loggingEnabled = shouldLog;
 }
-Rml::DataModelConstructor SDL_Webview::rmlCreateDataModel(std::string name, Rml::DataTypeRegister* dataTypeRegister) {
-    rmlContext->RemoveDataModel(name);
-    return rmlContext->CreateDataModel(name, dataTypeRegister);
-}
 Rml::ElementDocument* SDL_Webview::rmlLoadDocumentAsset(std::string webdocAssetPath) {
     return rmlLoadDocumentAbsolute(sdlBasePath+"/"+webAssetsSubpath+"/web_assets/"+webdocAssetPath);
 }
@@ -396,10 +406,10 @@ void SDL_Webview::injectScroll(nch::Vec2i delta) {
 void SDL_Webview::setMouseDisabled(bool md) {
     mouseDisabled = md;
 }
-
-Rml::DataModelConstructor SDL_Webview::getWorkingDataModel(std::string name) {
-    return rmlContext->GetDataModel(name);
+void SDL_Webview::setReloadUsingF5(bool reloadUsingF5) {
+    SDL_Webview::reloadUsingF5 = reloadUsingF5;
 }
+
 Rml::ElementDocument* SDL_Webview::getWorkingDocument() {
     return workingDocument;
 }
