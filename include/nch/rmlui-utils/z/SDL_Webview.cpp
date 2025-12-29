@@ -25,7 +25,7 @@ bool SDL_Webview::loggingEnabled = true;
 SystemInterface_SDL* SDL_Webview::sdlSystemInterface = nullptr;
 RenderInterface_SDL* SDL_Webview::sdlRenderInterface = nullptr;
 std::set<SDL_Keycode> SDL_Webview::specialKeys = {
-    SDLK_BACKSPACE, SDLK_RETURN, SDLK_KP_ENTER,
+    SDLK_BACKSPACE,
     SDLK_PAGEUP, SDLK_PAGEDOWN,
 SDLK_END, SDLK_HOME,
 SDLK_LEFT, SDLK_UP, SDLK_RIGHT, SDLK_DOWN,
@@ -283,12 +283,18 @@ void SDL_Webview::events(SDL_Event& evt)
     if(rmlContext==nullptr) return;
 
     if(evt.type==SDL_KEYDOWN || evt.type==SDL_TEXTINPUT) {
-        //Cancel keydown/textinput in certain cases ("readonly" input elements)
+        //Process keydown/textinput in certain cases (for non-readonly input elements)
         Rml::Element* focusedElem = rmlContext->GetFocusElement();
         if(focusedElem==nullptr) return;
         std::string focusedTag = focusedElem->GetTagName();
         if(focusedTag=="input" || focusedTag=="textarea") {
+            //Ignore readonly
             if(focusedElem->HasAttribute("readonly")) return;
+            //Hardcode unsupported actions.
+            SDL_Keycode kc = evt.key.keysym.sym;
+            if(kc==SDLK_RETURN || kc==SDLK_KP_ENTER) {
+                rmlContext->ProcessTextInput("\n");
+            }
         }
     }
 
@@ -410,6 +416,9 @@ void SDL_Webview::setReloadUsingF5(bool reloadUsingF5) {
     SDL_Webview::reloadUsingF5 = reloadUsingF5;
 }
 
+Rml::Context* SDL_Webview::getContext() {
+    return rmlContext;
+}
 Rml::ElementDocument* SDL_Webview::getWorkingDocument() {
     return workingDocument;
 }

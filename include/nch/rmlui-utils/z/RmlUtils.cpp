@@ -2,6 +2,8 @@
 #include "Element.h"
 #include <RmlUi/Core.h>
 #include <RmlUi/Core/Box.h>
+#include <RmlUi/Core/Element.h>
+#include <nch/cpp-utils/string-utils.h>
 #include <regex>
 using namespace nch;
 
@@ -97,4 +99,49 @@ void RmlUtils::appendChildRml(Rml::Element* eParent, const std::string& childRml
         throw std::logic_error("Provided 'rml' is not a valid RML element");
     }
     */
+}
+void RmlUtils::tryCopyPropertyFrom(Rml::Element* eSrc, Rml::Element* eDst, const std::string& propertyName)
+{
+    if(eSrc==nullptr || eDst==nullptr) return;
+    const Rml::Property* srcProp = eSrc->GetProperty(propertyName);
+    if(srcProp==nullptr) return;
+
+    eDst->SetProperty(propertyName, srcProp->ToString());
+}
+
+
+int RmlUtils::getTextAreaIdealHeight(Rml::Element* eTextArea, Rml::Context* rmlContext)
+{
+    Rml::ElementDocument* doc = eTextArea->GetOwnerDocument();
+    Rml::Element* eParent = eTextArea->GetParentNode();
+
+    Rml::ElementPtr dummy = doc->CreateElement("dummy-text-holder");
+    Rml::Element* eDummy = eParent->AppendChild(std::move(dummy)); {
+        std::vector<std::string> copiedProps = {
+            "max-width", "min-width", "width",
+            "line-height",
+            "margin-top", "margin-bottom", "margin-left", "margin-right",
+            "padding-top", "padding-bottom", "padding-left", "padding-right",
+        };
+        for(int i = 0; i<copiedProps.size(); i++) {
+            tryCopyPropertyFrom(eTextArea, eDummy, copiedProps[i]);
+        }
+        eDummy->SetProperty("display", "block");
+        eDummy->SetProperty("background-color", "rgb(255, 255, 255)");
+        eDummy->SetProperty("white-space", "pre-wrap");
+        eDummy->SetProperty("word-break", "break-word");
+
+        std::string textContent = eTextArea->GetInnerRML();
+        textContent = StringUtils::replacedAllAWithB(textContent, "\n", "<br/>");
+        eDummy->SetInnerRML(textContent+"x");
+    }
+
+     {
+        rmlContext->Update();
+        Rml::BoxArea boxArea = Rml::BoxArea::Margin;
+        int ret = eDummy->GetBox().GetSize(boxArea).y;
+        eParent->RemoveChild(eDummy);
+        rmlContext->Update();
+        return ret;
+    }
 }

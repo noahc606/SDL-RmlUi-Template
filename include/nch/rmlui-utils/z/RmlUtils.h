@@ -37,6 +37,8 @@ public:
     };
     static void setAttributes(Rml::ElementPtr& elem, const std::string& attrs);
     static void appendChildRml(Rml::Element* eParent, const std::string& childRml);
+    static void tryCopyPropertyFrom(Rml::Element* eSrc, Rml::Element* eDst, const std::string& propertyName);
 
+    static int getTextAreaIdealHeight(Rml::Element* eTextArea, Rml::Context* rmlContext);
 private:
 }; }

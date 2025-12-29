@@ -29,6 +29,7 @@ public:
     void drawScrollbars();
     void events(SDL_Event& evt);
 
+    Rml::Context* getContext();
     Rml::ElementDocument* getWorkingDocument();
     nch::Vec2i getDims();
     nch::Rect getScreenBox();
