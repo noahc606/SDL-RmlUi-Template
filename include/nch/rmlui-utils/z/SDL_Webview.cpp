@@ -299,6 +299,26 @@ void SDL_Webview::events(SDL_Event& evt)
             if((modState & KMOD_CTRL) && kc==SDLK_a) {
                 RmlUtils::trySelectAllText(focusedElem);
             }
+            //Copy
+            if((modState & KMOD_CTRL) && kc==SDLK_c) {
+                auto sel = RmlUtils::tryGetSelectedText(focusedElem);
+                if(std::get<0>(sel)!=std::get<1>(sel)) {
+                    SDL_SetClipboardText(std::get<2>(sel).c_str());
+                }
+            }
+            //Cut
+            if((modState & KMOD_CTRL) && kc==SDLK_x) {
+                auto sel = RmlUtils::tryGetSelectedText(focusedElem);
+                if(std::get<0>(sel)!=std::get<1>(sel)) {
+                    SDL_SetClipboardText(std::get<2>(sel).c_str());
+                }
+                rmlContext->ProcessKeyDown(RmlSDL::ConvertKey(SDLK_BACKSPACE), 0);
+            }
+            //Paste
+            if((modState & KMOD_CTRL) && kc==SDLK_v) {
+                std::string cliptext = SDL_GetClipboardText();
+                rmlContext->ProcessTextInput(cliptext);
+            }
             //Create newlines
             if(kc==SDLK_RETURN || kc==SDLK_KP_ENTER) {
                 rmlContext->ProcessTextInput("\n");

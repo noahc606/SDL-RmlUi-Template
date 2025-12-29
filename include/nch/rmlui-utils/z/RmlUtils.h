@@ -9,7 +9,8 @@ namespace nch { class RmlUtils {
 public:
     static nch::FRect getElementBox(Rml::Element* elem, Vec2f offset = {0, 0}, Rml::BoxArea boxArea = Rml::BoxArea::Border);
     static std::string getElementAttributeValue(Rml::Element* elem, std::string attrName);
-    
+    static std::tuple<int, int, std::string> tryGetSelectedText(Rml::Element* elem);
+
     static int getTextAreaIdealHeight(Rml::Element* eTextArea, Rml::Context* rmlContext);
     
     template<typename ... T> static void setStyleFormatted(Rml::Element* elem, const std::string& styleFormat, T ... args) {
@@ -42,5 +43,6 @@ public:
     static void appendChildRml(Rml::Element* eParent, const std::string& childRml);
     static void tryCopyPropertyFrom(Rml::Element* eSrc, Rml::Element* eDst, const std::string& propertyName);
     static void trySelectAllText(Rml::Element* elem);
+    static void tryClipboardPaste(Rml::Element* elem);
 private:
 }; }

@@ -27,6 +27,22 @@ std::string RmlUtils::getElementAttributeValue(Rml::Element* elem, std::string a
     }
     return "???null???";
 }
+std::tuple<int, int, std::string> RmlUtils::tryGetSelectedText(Rml::Element* elem)
+{
+    int x = 0, y = 0;
+    std::string ret = "";
+
+    Rml::ElementFormControlTextArea* textarea;
+    Rml::ElementFormControlInput* input;
+    if((textarea = dynamic_cast<Rml::ElementFormControlTextArea*>(elem))) {
+        textarea->GetSelection(&x, &y, &ret);
+    }
+    if((input = dynamic_cast<Rml::ElementFormControlInput*>(elem))) {
+        textarea->GetSelection(&x, &y, &ret);
+    }
+
+    return {x, y, ret};
+}
 
 int RmlUtils::getTextAreaIdealHeight(Rml::Element* eTextArea, Rml::Context* rmlContext)
 {
@@ -149,11 +165,15 @@ void RmlUtils::trySelectAllText(Rml::Element* elem)
 {
     Rml::ElementFormControlTextArea* textarea;
     Rml::ElementFormControlInput* input;
-
     if((textarea = dynamic_cast<Rml::ElementFormControlTextArea*>(elem))) {
         textarea->Select();
     }
     if((input = dynamic_cast<Rml::ElementFormControlInput*>(elem))) {
         input->Select();
     }
+}
+
+void RmlUtils::tryClipboardPaste(Rml::Element* elem)
+{
+
 }
