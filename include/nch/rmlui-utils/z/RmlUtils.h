@@ -9,6 +9,9 @@ namespace nch { class RmlUtils {
 public:
     static nch::FRect getElementBox(Rml::Element* elem, Vec2f offset = {0, 0}, Rml::BoxArea boxArea = Rml::BoxArea::Border);
     static std::string getElementAttributeValue(Rml::Element* elem, std::string attrName);
+    
+    static int getTextAreaIdealHeight(Rml::Element* eTextArea, Rml::Context* rmlContext);
+    
     template<typename ... T> static void setStyleFormatted(Rml::Element* elem, const std::string& styleFormat, T ... args) {
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wformat-security"
@@ -38,7 +41,6 @@ public:
     static void setAttributes(Rml::ElementPtr& elem, const std::string& attrs);
     static void appendChildRml(Rml::Element* eParent, const std::string& childRml);
     static void tryCopyPropertyFrom(Rml::Element* eSrc, Rml::Element* eDst, const std::string& propertyName);
-
-    static int getTextAreaIdealHeight(Rml::Element* eTextArea, Rml::Context* rmlContext);
+    static void trySelectAllText(Rml::Element* elem);
 private:
 }; }

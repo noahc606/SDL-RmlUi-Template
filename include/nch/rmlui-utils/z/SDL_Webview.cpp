@@ -13,6 +13,7 @@
 #include <nch/sdl-utils/rect.h>
 #include <nch/sdl-utils/texture-utils.h>
 #include <sstream>
+#include "RmlUtils.h"
 
 
 using namespace nch;
@@ -282,16 +283,23 @@ void SDL_Webview::events(SDL_Event& evt)
 {
     if(rmlContext==nullptr) return;
 
-    if(evt.type==SDL_KEYDOWN || evt.type==SDL_TEXTINPUT) {
+    Rml::Element* focusedElem = rmlContext->GetFocusElement();
+
+    if(focusedElem!=nullptr && (evt.type==SDL_KEYDOWN || evt.type==SDL_TEXTINPUT)) {
         //Process keydown/textinput in certain cases (for non-readonly input elements)
-        Rml::Element* focusedElem = rmlContext->GetFocusElement();
-        if(focusedElem==nullptr) return;
         std::string focusedTag = focusedElem->GetTagName();
-        if(focusedTag=="input" || focusedTag=="textarea") {
-            //Ignore readonly
-            if(focusedElem->HasAttribute("readonly")) return;
-            //Hardcode unsupported actions.
+
+        if(!focusedElem->HasAttribute("readonly"))
+        if(focusedTag=="input" || focusedTag=="textarea") {            
+            /* Hardcode unsupported actions. */
             SDL_Keycode kc = evt.key.keysym.sym;
+            SDL_Keymod modState = SDL_GetModState();
+
+            //Select all
+            if((modState & KMOD_CTRL) && kc==SDLK_a) {
+                RmlUtils::trySelectAllText(focusedElem);
+            }
+            //Create newlines
             if(kc==SDLK_RETURN || kc==SDLK_KP_ENTER) {
                 rmlContext->ProcessTextInput("\n");
             }
