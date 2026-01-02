@@ -29,11 +29,13 @@ public:
     void drawScrollbars();
     void events(SDL_Event& evt);
 
-    Rml::Context* getContext();
-    Rml::ElementDocument* getWorkingDocument();
-    nch::Vec2i getDims();
-    nch::Rect getScreenBox();
-    nch::Vec2i getScroll();
+    Rml::Context* getContext() const;
+    Rml::ElementDocument* getWorkingDocument() const;
+    nch::Vec2i getDims() const;
+    nch::Rect getScreenBox() const;
+    nch::Rect getViewBox() const;
+    nch::Vec2i getScroll() const;
+    nch::Vec2i getMaxScroll() const;
 
     static void setLogging(bool shouldLog);
     Rml::ElementDocument* rmlLoadDocumentAsset(std::string webdocAssetPath);
@@ -44,15 +46,19 @@ public:
     void setScreenBox(nch::Rect scrBox);
     void setScrollDist(int scrollDist);
     void resetScrollbar();
+    void setScroll(nch::Vec2i scroll);
     void injectClick(nch::Vec2i pos, int button = 1);
     void injectScroll(nch::Vec2i delta);
+    void unfocusAll();
+    void setForcedFocus(bool forcedFocus);
     void setMouseDisabled(bool md);
     void setReloadUsingF5(bool reloadUsingF5);
 private:
     static void rmlGloballyLoadFontAbsolute(std::string fontAbsolutePath, bool fallback = false);
     Rml::ElementDocument* rmlLoadDocumentAbsolute(std::string webdocAbsolutePath);
     void updateResizingBody();
-    
+    void truncateViewBox();
+
     static bool rmlInitialized;
     static SDL_Renderer* sdlRenderer;
     static std::string sdlBasePath;
@@ -70,9 +76,10 @@ private:
     SDL_Texture* webTex = nullptr;          nch::Vec2i dims = {1, 1};
     nch::Vec2i lastMousePos = {-1, -1};
     nch::Rect screenBox = {-1,-1,-1,-1};
-    nch::Rect viewBox = {-1,-1,-1,-1};
+    nch::Rect viewBox = {0,0,-1,-1};
     bool mouseDisabled = false;
     bool scrollEnabled = true;
     int scrollDist = 26;
+    bool forcedFocus = true;
     bool reloadUsingF5 = false;
 }; }

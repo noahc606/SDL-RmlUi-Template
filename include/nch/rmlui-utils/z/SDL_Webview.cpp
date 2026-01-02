@@ -145,7 +145,8 @@ void SDL_Webview::tick()
     if(rmlContext==nullptr) return;
 
     /* Mouse */
-    Vec2i mousePos; {
+    Vec2i mousePos;
+    if(forcedFocus) {
         mousePos = { Input::getMouseX()-screenBox.r.x, Input::getMouseY()-screenBox.r.y+viewBox.r.y };
         bool cancelMouse = false;
         if(mouseDisabled) cancelMouse = true;
@@ -184,7 +185,7 @@ void SDL_Webview::tick()
     }
 
     /* Reloading */
-    if(reloadUsingF5 && Input::keyDownTime(SDLK_F5)==1) {
+    if(forcedFocus && reloadUsingF5 && Input::keyDownTime(SDLK_F5)==1) {
         reload();    
     }
 
@@ -212,6 +213,7 @@ void SDL_Webview::render()
 void SDL_Webview::drawCopyAt(Rect src, Rect dst, double alpha)
 {
     if(rmlContext==nullptr) return;
+    truncateViewBox();
 
     int res = SDL_SetTextureBlendMode(webTex, SDL_BLENDMODE_BLEND);
     if(res!=0) {
@@ -258,7 +260,7 @@ void SDL_Webview::drawScrollbars()
     //Find 'sb0Dst' (scroll bar background)
     Rect sb0Dst = dst; {
         sb0Dst.r.w = 12;
-        sb0Dst.r.x = dst.r.w-8;
+        sb0Dst.r.x = (dst.r.x-4)+dst.r.w-8;
     }
     //Find 'sb1Dst' (scroll bar foreground) & 'sbVisible'
     Rect sb1Dst = sb0Dst; bool sbVisible = true; {
@@ -283,13 +285,13 @@ void SDL_Webview::events(SDL_Event& evt)
 {
     if(rmlContext==nullptr) return;
 
-    Rml::Element* focusedElem = rmlContext->GetFocusElement();
+    Rml::Element* eFocused = rmlContext->GetFocusElement();
+    if(eFocused==nullptr) return;
+    bool elemReadOnly = eFocused->HasAttribute("readonly");
 
-    if(focusedElem!=nullptr && (evt.type==SDL_KEYDOWN || evt.type==SDL_TEXTINPUT)) {
+    if((evt.type==SDL_KEYDOWN || evt.type==SDL_TEXTINPUT)) {
         //Process keydown/textinput in certain cases (for non-readonly input elements)
-        std::string focusedTag = focusedElem->GetTagName();
-
-        if(!focusedElem->HasAttribute("readonly"))
+        std::string focusedTag = eFocused->GetTagName();
         if(focusedTag=="input" || focusedTag=="textarea") {            
             /* Hardcode unsupported actions. */
             SDL_Keycode kc = evt.key.keysym.sym;
@@ -297,49 +299,59 @@ void SDL_Webview::events(SDL_Event& evt)
 
             //Select all
             if((modState & KMOD_CTRL) && kc==SDLK_a) {
-                RmlUtils::trySelectAllText(focusedElem);
+                RmlUtils::trySelectAllText(eFocused);
             }
             //Copy
             if((modState & KMOD_CTRL) && kc==SDLK_c) {
-                auto sel = RmlUtils::tryGetSelectedText(focusedElem);
+                auto sel = RmlUtils::tryGetSelectedText(eFocused);
                 if(std::get<0>(sel)!=std::get<1>(sel)) {
                     SDL_SetClipboardText(std::get<2>(sel).c_str());
                 }
             }
             //Cut
             if((modState & KMOD_CTRL) && kc==SDLK_x) {
-                auto sel = RmlUtils::tryGetSelectedText(focusedElem);
+                auto sel = RmlUtils::tryGetSelectedText(eFocused);
                 if(std::get<0>(sel)!=std::get<1>(sel)) {
                     SDL_SetClipboardText(std::get<2>(sel).c_str());
                 }
-                rmlContext->ProcessKeyDown(RmlSDL::ConvertKey(SDLK_BACKSPACE), 0);
+
+                if(!elemReadOnly) {
+                    rmlContext->ProcessKeyDown(RmlSDL::ConvertKey(SDLK_BACKSPACE), 0);
+                }
             }
             //Paste
             if((modState & KMOD_CTRL) && kc==SDLK_v) {
-                std::string cliptext = SDL_GetClipboardText();
-                rmlContext->ProcessTextInput(cliptext);
+                if(!elemReadOnly) {
+                    std::string cliptext = SDL_GetClipboardText();
+                    rmlContext->ProcessTextInput(cliptext);
+                }
             }
             //Create newlines
             if(kc==SDLK_RETURN || kc==SDLK_KP_ENTER) {
-                rmlContext->ProcessTextInput("\n");
+                if(!elemReadOnly) {
+                    rmlContext->ProcessTextInput("\n");
+                }
             }
         }
     }
 
-    switch(evt.type) {
-        case SDL_KEYDOWN: {
-            SDL_Keycode kc = evt.key.keysym.sym;
-            SDL_Keymod modState = SDL_GetModState();
-            if(specialKeys.find(kc)!=specialKeys.end()) {
-                if(modState & KMOD_NUM) { rmlContext->ProcessKeyDown(RmlSDL::ConvertKey(kc), Rml::Input::KM_NUMLOCK); }
-                else                    { rmlContext->ProcessKeyDown(RmlSDL::ConvertKey(kc), 0); }
-            }
-        } break;
-        case SDL_TEXTINPUT: {
-            //Process text input by this point
-            rmlContext->ProcessTextInput(evt.text.text);
-        } break;
+    if(!elemReadOnly) {
+        switch(evt.type) {
+            case SDL_KEYDOWN: {
+                SDL_Keycode kc = evt.key.keysym.sym;
+                SDL_Keymod modState = SDL_GetModState();
+                if(specialKeys.find(kc)!=specialKeys.end()) {
+                    if(modState & KMOD_NUM) { rmlContext->ProcessKeyDown(RmlSDL::ConvertKey(kc), Rml::Input::KM_NUMLOCK); }
+                    else                    { rmlContext->ProcessKeyDown(RmlSDL::ConvertKey(kc), 0); }
+                }
+            } break;
+            case SDL_TEXTINPUT: {
+                //Process text input by this point
+                rmlContext->ProcessTextInput(evt.text.text);
+            } break;
+        }
     }
+
 }
 
 void SDL_Webview::setLogging(bool shouldLog) {
@@ -414,13 +426,20 @@ void SDL_Webview::setScreenBox(Rect scrBox)
     //Update view box
     viewBox.r.w = screenBox.r.w;
     viewBox.r.h = screenBox.r.h;
+    truncateViewBox();
 }
 void SDL_Webview::setScrollDist(int scrollDist) {
     SDL_Webview::scrollDist = scrollDist;
 }
 void SDL_Webview::resetScrollbar()
 {
+    viewBox.r.x = 0;
     viewBox.r.y = 0;
+}
+void SDL_Webview::setScroll(Vec2i scroll) {
+    viewBox.r.x = scroll.x;
+    viewBox.r.y = scroll.y;
+    truncateViewBox();
 }
 
 void SDL_Webview::injectClick(nch::Vec2i pos, int button) {
@@ -431,12 +450,25 @@ void SDL_Webview::injectClick(nch::Vec2i pos, int button) {
 void SDL_Webview::injectScroll(nch::Vec2i delta) {
     rmlContext->ProcessMouseWheel({(float)delta.x, -(float)delta.y}, 0);
 
-    viewBox.r.y -= (delta.y*scrollDist);
-    if(viewBox.y1()<0)       { viewBox.r.y = 0; }
-    if(viewBox.y2()>dims.y) { viewBox.r.y = dims.y-viewBox.r.h; }
-    if(viewBox.x1()<0)       { viewBox.r.x = 0; }
-    if(viewBox.x2()>dims.x) { viewBox.r.x = dims.x-viewBox.r.w; }
+    setScroll({
+        viewBox.r.x-(delta.x*scrollDist),
+        viewBox.r.y-(delta.y*scrollDist)
+    });
 }
+void SDL_Webview::unfocusAll() {
+    auto doc = workingDocument;
+
+    Rml::ElementList eList;
+    doc->GetElementsByTagName(eList, "*");
+    for(int i = 0; i<eList.size(); i++) {
+        eList[i]->Blur();
+    }
+}
+void SDL_Webview::setForcedFocus(bool forcedFocus) {
+    SDL_Webview::forcedFocus = forcedFocus;
+    if(!forcedFocus) unfocusAll();
+}
+
 void SDL_Webview::setMouseDisabled(bool md) {
     mouseDisabled = md;
 }
@@ -444,20 +476,26 @@ void SDL_Webview::setReloadUsingF5(bool reloadUsingF5) {
     SDL_Webview::reloadUsingF5 = reloadUsingF5;
 }
 
-Rml::Context* SDL_Webview::getContext() {
+Rml::Context* SDL_Webview::getContext() const {
     return rmlContext;
 }
-Rml::ElementDocument* SDL_Webview::getWorkingDocument() {
+Rml::ElementDocument* SDL_Webview::getWorkingDocument() const {
     return workingDocument;
 }
-Vec2i SDL_Webview::getDims() {
+Vec2i SDL_Webview::getDims() const {
     return dims;
 }
-Rect SDL_Webview::getScreenBox() {
+Rect SDL_Webview::getScreenBox() const {
     return screenBox;
 }
-nch::Vec2i SDL_Webview::getScroll() {
+nch::Rect SDL_Webview::getViewBox() const {
+    return viewBox;
+}
+nch::Vec2i SDL_Webview::getScroll() const {
     return { viewBox.r.x, viewBox.r.y };
+}
+nch::Vec2i SDL_Webview::getMaxScroll() const {
+    return { dims.x-viewBox.r.w, dims.y-viewBox.r.h };
 }
 
 void SDL_Webview::rmlGloballyLoadFontAbsolute(std::string fontAbsolutePath, bool fallback) {
@@ -502,4 +540,11 @@ void SDL_Webview::updateResizingBody()
             eRBody->SetAttribute("style", ss.str());
         }
     }
+}
+void SDL_Webview::truncateViewBox()
+{
+    if(viewBox.y1()<0)      { viewBox.r.y = 0; }
+    if(viewBox.y2()>dims.y) { viewBox.r.y = dims.y-viewBox.r.h; }
+    if(viewBox.x1()<0)      { viewBox.r.x = 0; }
+    if(viewBox.x2()>dims.x) { viewBox.r.x = dims.x-viewBox.r.w; }
 }
