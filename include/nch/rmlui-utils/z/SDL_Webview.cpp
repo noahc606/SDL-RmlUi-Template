@@ -497,6 +497,9 @@ nch::Vec2i SDL_Webview::getScroll() const {
 nch::Vec2i SDL_Webview::getMaxScroll() const {
     return { dims.x-viewBox.r.w, dims.y-viewBox.r.h };
 }
+bool SDL_Webview::hasForcedFocus() const {
+    return forcedFocus;
+}
 
 void SDL_Webview::rmlGloballyLoadFontAbsolute(std::string fontAbsolutePath, bool fallback) {
     if(!Rml::LoadFontFace(fontAbsolutePath, fallback)) {

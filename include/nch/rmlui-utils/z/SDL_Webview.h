@@ -36,6 +36,7 @@ public:
     nch::Rect getViewBox() const;
     nch::Vec2i getScroll() const;
     nch::Vec2i getMaxScroll() const;
+    bool hasForcedFocus() const;
 
     static void setLogging(bool shouldLog);
     Rml::ElementDocument* rmlLoadDocumentAsset(std::string webdocAssetPath);
