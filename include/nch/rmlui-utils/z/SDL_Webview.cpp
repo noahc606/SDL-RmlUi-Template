@@ -539,6 +539,9 @@ void SDL_Webview::setUserCanScroll(bool ucs) {
 void SDL_Webview::setReloadUsingF5(bool reloadUsingF5) {
     SDL_Webview::reloadUsingF5 = reloadUsingF5;
 }
+void SDL_Webview::useAnimatedScrolling(bool use) {
+    SDL_Webview::animatedScrolling = use;
+}
 
 Rml::Context* SDL_Webview::getContext() const {
     return rmlContext;

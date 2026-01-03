@@ -56,6 +56,7 @@ public:
     void setMouseDisabled(bool md);
     void setUserCanScroll(bool ucs);
     void setReloadUsingF5(bool reloadUsingF5);
+    void useAnimatedScrolling(bool use);
 private:
     static void rmlGloballyLoadFontAbsolute(std::string fontAbsolutePath, bool fallback = false);
     Rml::ElementDocument* rmlLoadDocumentAbsolute(std::string webdocAbsolutePath);
