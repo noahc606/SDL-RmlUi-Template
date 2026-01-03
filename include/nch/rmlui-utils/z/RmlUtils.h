@@ -11,8 +11,6 @@ public:
     static std::string getElementAttribute(Rml::Element* elem, std::string attrName);
     static bool elementHasAttribute(Rml::Element* elem, std::string attrName);
     static std::tuple<int, int, std::string> tryGetSelectedText(Rml::Element* elem);
-
-    static int getTextAreaIdealHeight(Rml::Element* eTextArea, Rml::Context* rmlContext);
     
     template<typename ... T> static void setStyleFormatted(Rml::Element* elem, const std::string& styleFormat, T ... args) {
         #pragma GCC diagnostic push

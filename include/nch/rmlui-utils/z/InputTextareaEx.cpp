@@ -1,4 +1,5 @@
 #include "InputTextareaEx.h"
+#include <RmlUi/Core/Context.h>
 #include <RmlUi/Core/Elements/ElementFormControlTextArea.h>
 #include <nch/cpp-utils/string-utils.h>
 #include <nch/rmlui-utils/rml-utils.h>
@@ -40,12 +41,50 @@ void InputTextareaEx::tick(SDL_Webview* webview, Rml::Element* e) {
     }
 
     if(update) {
-        int idealHeight = RmlUtils::getTextAreaIdealHeight(e, ctx);
+        int idealHeight = getTextAreaIdealHeight(e, ctx);
         RmlUtils::setStyleFormatted(e, "height: %dpx", idealHeight);
         
         textareaID_ValueMap.erase(id);
         textareaID_ValueMap.insert({id, val});
         textareaID_SizeMap.erase(id);
         textareaID_SizeMap.insert({id, dims});
+    }
+}
+
+int InputTextareaEx::getTextAreaIdealHeight(Rml::Element* eTextArea, Rml::Context* ctx)
+{
+    Rml::ElementDocument* doc = eTextArea->GetOwnerDocument();
+    Rml::Element* eParent = eTextArea->GetParentNode();
+
+    Rml::ElementPtr dummy = doc->CreateElement("dummy-text-holder");
+    Rml::Element* eDummy = eParent->AppendChild(std::move(dummy)); {
+        std::vector<std::string> copiedProps = {
+            "max-width", "min-width", "width",
+            "line-height",
+            "margin-top", "margin-bottom", "margin-left", "margin-right",
+            "padding-top", "padding-bottom", "padding-left", "padding-right",
+        };
+        for(int i = 0; i<copiedProps.size(); i++) {
+            RmlUtils::tryCopyPropertyFrom(eTextArea, eDummy, copiedProps[i]);
+        }
+        eDummy->SetProperty("display", "block");
+        eDummy->SetProperty("background-color", "rgb(255, 255, 255)");
+        eDummy->SetProperty("white-space", "pre-wrap");
+        eDummy->SetProperty("word-break", "break-word");
+
+        std::string textContent = eTextArea->GetInnerRML();
+        textContent = StringUtils::replacedAllAWithB(textContent, "<", "=");
+        textContent = StringUtils::replacedAllAWithB(textContent, ">", "=");
+        textContent = StringUtils::replacedAllAWithB(textContent, "\n", "<br/>");
+        eDummy->SetInnerRML(textContent+"x");
+    }
+
+    {
+        ctx->Update();
+        Rml::BoxArea boxArea = Rml::BoxArea::Margin;
+        int ret = eDummy->GetBox().GetSize(boxArea).y;
+        eParent->RemoveChild(eDummy);
+        ctx->Update();
+        return ret;
     }
 }
