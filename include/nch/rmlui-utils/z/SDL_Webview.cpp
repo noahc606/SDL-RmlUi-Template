@@ -217,6 +217,21 @@ void SDL_Webview::tick()
         reload();    
     }
 
+    /* Animated view box */
+    if(animatedScrolling) {
+        animViewBox = viewBox;
+    } else {
+        animViewBox.r.x = (viewBox.r.x+animViewBox.r.x)/2;
+        animViewBox.r.y = (viewBox.r.y+animViewBox.r.y)/2;
+        animViewBox.r.w = (viewBox.r.w+animViewBox.r.w)/2;
+        animViewBox.r.h = (viewBox.r.h+animViewBox.r.h)/2;
+
+        if(std::abs(animViewBox.r.x-viewBox.r.x)<5) animViewBox.r.x = viewBox.r.x;
+        if(std::abs(animViewBox.r.y-viewBox.r.y)<5) animViewBox.r.y = viewBox.r.y;
+        if(std::abs(animViewBox.r.w-viewBox.r.w)<5) animViewBox.r.w = viewBox.r.w;
+        if(std::abs(animViewBox.r.h-viewBox.r.h)<5) animViewBox.r.h = viewBox.r.h;
+    }
+
     //Update context
 	update();
 
@@ -275,7 +290,7 @@ void SDL_Webview::drawCopy()
 {
     if(screenBox.r.h>dims.y) { screenBox.r.h = dims.y; }
     if(screenBox.r.w>dims.x) { screenBox.r.w = dims.x; }
-    drawCopyAt(viewBox.r, screenBox.r);
+    drawCopyAt(animViewBox.r, screenBox.r);
 }
 void SDL_Webview::drawScrollbars()
 {
@@ -293,8 +308,8 @@ void SDL_Webview::drawScrollbars()
     //Find 'sb1Dst' (scroll bar foreground) & 'sbVisible'
     Rect sb1Dst = sb0Dst; bool sbVisible = true; {
         sb1Dst = sb0Dst;
-        double sbY = (double)viewBox.r.y/dims.y*sb1Dst.r.h;
-        double sbH = (double)viewBox.r.h/dims.y*sb1Dst.r.h;
+        double sbY = (double)animViewBox.r.y/dims.y*sb1Dst.r.h;
+        double sbH = (double)animViewBox.r.h/dims.y*sb1Dst.r.h;
         sb1Dst.r.y += sbY;
         sb1Dst.r.h = sbH;
         if(sb1Dst==sb0Dst) sbVisible = false;

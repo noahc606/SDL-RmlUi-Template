@@ -81,6 +81,8 @@ private:
     nch::Vec2i lastMousePos = {-1, -1};
     nch::Rect screenBox = {-1,-1,-1,-1};
     nch::Rect viewBox = {0,0,-1,-1};
+    nch::Rect animViewBox = {0, 0, -1, -1};
+    bool animatedScrolling = false;
     bool mouseDisabled = false;
     bool userCanScroll = true;
     int scrollDist = 26;
