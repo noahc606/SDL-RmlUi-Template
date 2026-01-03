@@ -19,14 +19,21 @@ FRect RmlUtils::getElementBox(Rml::Element* elem, Vec2f offset, Rml::BoxArea box
         elemSize.y
     );
 }
-std::string RmlUtils::getElementAttributeValue(Rml::Element* elem, std::string attrName)
+std::string RmlUtils::getElementAttribute(Rml::Element* elem, std::string attrName)
 {
+    if(elem==nullptr) throw std::invalid_argument("Element is nullptr");
+    
     Rml::Variant* attVal = elem->GetAttribute(attrName);
     if(attVal!=nullptr) {
         return attVal->Get<std::string>();
     }
-    return "???null???";
+    throw std::invalid_argument(StringUtils::cat("Element does not have attribute \"", attrName, "\""));
 }
+bool RmlUtils::elementHasAttribute(Rml::Element* elem, std::string attrName)
+{
+    return elem->GetAttribute(attrName)!=nullptr;
+}
+
 std::tuple<int, int, std::string> RmlUtils::tryGetSelectedText(Rml::Element* elem)
 {
     int x = 0, y = 0;
@@ -66,6 +73,8 @@ int RmlUtils::getTextAreaIdealHeight(Rml::Element* eTextArea, Rml::Context* rmlC
         eDummy->SetProperty("word-break", "break-word");
 
         std::string textContent = eTextArea->GetInnerRML();
+        textContent = StringUtils::replacedAllAWithB(textContent, "<", "=");
+        textContent = StringUtils::replacedAllAWithB(textContent, ">", "=");
         textContent = StringUtils::replacedAllAWithB(textContent, "\n", "<br/>");
         eDummy->SetInnerRML(textContent+"x");
     }

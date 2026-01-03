@@ -13,6 +13,7 @@
 #include <nch/sdl-utils/rect.h>
 #include <nch/sdl-utils/texture-utils.h>
 #include <sstream>
+#include "InputSlider.h"
 #include "RmlUtils.h"
 
 
@@ -182,6 +183,13 @@ void SDL_Webview::tick()
                 injectScroll({0, mwd});
             }
         }
+    }
+
+    /* Slider elements */
+    Rml::ElementList elist;
+    workingDocument->GetElementsByTagName(elist, "slider");
+    for(int i = 0; i<elist.size(); i++) {
+        InputSlider::tick(this, elist[i]);
     }
 
     /* Reloading */

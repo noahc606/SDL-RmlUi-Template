@@ -8,7 +8,8 @@
 namespace nch { class RmlUtils {
 public:
     static nch::FRect getElementBox(Rml::Element* elem, Vec2f offset = {0, 0}, Rml::BoxArea boxArea = Rml::BoxArea::Border);
-    static std::string getElementAttributeValue(Rml::Element* elem, std::string attrName);
+    static std::string getElementAttribute(Rml::Element* elem, std::string attrName);
+    static bool elementHasAttribute(Rml::Element* elem, std::string attrName);
     static std::tuple<int, int, std::string> tryGetSelectedText(Rml::Element* elem);
 
     static int getTextAreaIdealHeight(Rml::Element* eTextArea, Rml::Context* rmlContext);
