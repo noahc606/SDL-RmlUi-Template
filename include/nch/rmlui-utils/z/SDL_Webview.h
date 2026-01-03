@@ -49,10 +49,12 @@ public:
     void resetScrollbar();
     void setScroll(nch::Vec2i scroll);
     void injectClick(nch::Vec2i pos, int button = 1);
+    void injectScrollF(nch::Vec2f delta);
     void injectScroll(nch::Vec2i delta);
     void unfocusAll();
     void setForcedFocus(bool forcedFocus);
     void setMouseDisabled(bool md);
+    void setUserCanScroll(bool ucs);
     void setReloadUsingF5(bool reloadUsingF5);
 private:
     static void rmlGloballyLoadFontAbsolute(std::string fontAbsolutePath, bool fallback = false);
@@ -60,6 +62,7 @@ private:
     void updateResizingBody();
     void truncateViewBox();
 
+    static SDL_RendererInfo sdlRendererInfo;
     static bool rmlInitialized;
     static SDL_Renderer* sdlRenderer;
     static std::string sdlBasePath;
@@ -79,7 +82,7 @@ private:
     nch::Rect screenBox = {-1,-1,-1,-1};
     nch::Rect viewBox = {0,0,-1,-1};
     bool mouseDisabled = false;
-    bool scrollEnabled = true;
+    bool userCanScroll = true;
     int scrollDist = 26;
     bool forcedFocus = true;
     bool reloadUsingF5 = false;

@@ -20,6 +20,7 @@
 
 using namespace nch;
 
+SDL_RendererInfo SDL_Webview::sdlRendererInfo;
 bool SDL_Webview::rmlInitialized = false;
 SDL_Renderer* SDL_Webview::sdlRenderer = nullptr;
 std::string SDL_Webview::sdlBasePath = "???null???";
@@ -125,6 +126,11 @@ void SDL_Webview::rmlGlobalInit(SDL_Renderer* p_sdlRenderer, std::string p_sdlBa
         rmlGloballyLoadFontAbsolute(prefix+"NotoEmoji-Regular.ttf", true);
     }
 
+    /* SDL renderer info */
+    SDL_GetRendererInfo(sdlRenderer, &sdlRendererInfo);
+    maxDimSize.x = sdlRendererInfo.max_texture_width;
+    maxDimSize.y = sdlRendererInfo.max_texture_height;
+
     rmlInitialized = true;
 }
 void SDL_Webview::rmlGloballyLoadFontAsset(std::string fontAssetPath, bool fallback) {
@@ -137,6 +143,7 @@ void SDL_Webview::rmlGlobalShutdown()
         return;
     }
 
+    maxDimSize = {4096, 4096};
     Rml::Shutdown();
     rmlInitialized = false;
 }
@@ -146,7 +153,7 @@ void SDL_Webview::tick()
 {
     if(rmlContext==nullptr) return;
 
-    /* Mouse */
+    /* Mouse movement, clicking, and scrolling */
     Vec2i mousePos;
     if(forcedFocus) {
         mousePos = { Input::getMouseX()-screenBox.r.x, Input::getMouseY()-screenBox.r.y+viewBox.r.y };
@@ -179,23 +186,31 @@ void SDL_Webview::tick()
             }
 
             //Mouse scrolling
-            int mwd = Input::getMouseWheelDelta();
-            if(mwd!=0) {
-                injectScroll({0, mwd});
+            if(userCanScroll) {
+                int mwd = Input::getMouseWheelDelta();
+                if(mwd!=0) {
+                    injectScroll({0, mwd});
+                }                
             }
+
         }
     }
 
-    /* Slider elements */
+    /* Custom elements */
     Rml::ElementList elist;
-    workingDocument->GetElementsByTagName(elist, "slider");
-    for(int i = 0; i<elist.size(); i++) {
-        InputSlider::tick(this, elist[i]);
+    {
+        //Slider
+        workingDocument->GetElementsByTagName(elist, "slider");
+        for(int i = 0; i<elist.size(); i++) {
+            InputSlider::tick(this, elist[i]);
+        }
+        //Expanding textarea
+        workingDocument->GetElementsByTagName(elist, "textarea");
+        for(int i = 0; i<elist.size(); i++) {
+            InputTextareaEx::tick(this, elist[i]);
+        }
     }
-    workingDocument->GetElementsByTagName(elist, "textarea");
-    for(int i = 0; i<elist.size(); i++) {
-        InputTextareaEx::tick(this, elist[i]);
-    }
+
 
     /* Reloading */
     if(forcedFocus && reloadUsingF5 && Input::keyDownTime(SDLK_F5)==1) {
@@ -303,13 +318,15 @@ void SDL_Webview::events(SDL_Event& evt)
     bool elemReadOnly = eFocused->HasAttribute("readonly");
 
     if((evt.type==SDL_KEYDOWN || evt.type==SDL_TEXTINPUT)) {
+        //Get info
+        SDL_Keycode kc = evt.key.keysym.sym;
+        SDL_Keymod modState = SDL_GetModState();        
         //Process keydown/textinput in certain cases (for non-readonly input elements)
         std::string focusedTag = eFocused->GetTagName();
-        if(focusedTag=="input" || focusedTag=="textarea") {            
-            /* Hardcode unsupported actions. */
-            SDL_Keycode kc = evt.key.keysym.sym;
-            SDL_Keymod modState = SDL_GetModState();
-
+        bool withinTextInput = (focusedTag=="input" || focusedTag=="textarea");
+        bool withinUsableTextInput = (withinTextInput && !elemReadOnly);
+        if(withinTextInput) {            
+            /* Hardcode unsupported textarea actions. */
             //Select all
             if((modState & KMOD_CTRL) && kc==SDLK_a) {
                 RmlUtils::trySelectAllText(eFocused);
@@ -344,6 +361,18 @@ void SDL_Webview::events(SDL_Event& evt)
                 if(!elemReadOnly) {
                     rmlContext->ProcessTextInput("\n");
                 }
+            }
+        }
+
+        //Scrolling using arrows/pageup/pagedown/etc
+        if(userCanScroll && !withinUsableTextInput) {
+            switch(kc) {
+                case SDLK_UP:       { injectScrollF(Vec2f(0, 1/3.0)); } break;
+                case SDLK_DOWN:     { injectScrollF(Vec2f(0, -1/3.0)); } break;
+                case SDLK_LEFT:     { injectScrollF(Vec2f(1/3.0, 0)); } break;
+                case SDLK_RIGHT:    { injectScrollF(Vec2f(-1/3.0, 0)); } break;
+                case SDLK_PAGEUP:   { injectScrollF(Vec2f(0, screenBox.r.h/(float)scrollDist)); } break; 
+                case SDLK_PAGEDOWN: { injectScrollF(Vec2f(0, -screenBox.r.h/(float)scrollDist)); } break;
             }
         }
     }
@@ -455,18 +484,22 @@ void SDL_Webview::setScroll(Vec2i scroll) {
     truncateViewBox();
 }
 
-void SDL_Webview::injectClick(nch::Vec2i pos, int button) {
+void SDL_Webview::injectClick(Vec2i pos, int button) {
     rmlContext->ProcessMouseMove(pos.x, pos.y, 0);
     rmlContext->ProcessMouseButtonDown(button-1, 0);
     rmlContext->ProcessMouseButtonUp(button-1, 0);
 }
-void SDL_Webview::injectScroll(nch::Vec2i delta) {
-    rmlContext->ProcessMouseWheel({(float)delta.x, -(float)delta.y}, 0);
+
+void SDL_Webview::injectScrollF(Vec2f delta) {
+    rmlContext->ProcessMouseWheel({delta.x, -delta.y}, 0);
 
     setScroll({
-        viewBox.r.x-(delta.x*scrollDist),
-        viewBox.r.y-(delta.y*scrollDist)
+        viewBox.r.x-(int)(delta.x*scrollDist),
+        viewBox.r.y-(int)(delta.y*scrollDist)
     });
+}
+void SDL_Webview::injectScroll(Vec2i delta) {
+    injectScrollF(delta.toFloat());
 }
 void SDL_Webview::unfocusAll() {
     auto doc = workingDocument;
@@ -484,6 +517,9 @@ void SDL_Webview::setForcedFocus(bool forcedFocus) {
 
 void SDL_Webview::setMouseDisabled(bool md) {
     mouseDisabled = md;
+}
+void SDL_Webview::setUserCanScroll(bool ucs) {
+    userCanScroll = ucs;
 }
 void SDL_Webview::setReloadUsingF5(bool reloadUsingF5) {
     SDL_Webview::reloadUsingF5 = reloadUsingF5;
