@@ -14,6 +14,7 @@
 #include <nch/sdl-utils/texture-utils.h>
 #include <sstream>
 #include "InputSlider.h"
+#include "InputTextareaEx.h"
 #include "RmlUtils.h"
 
 
@@ -190,6 +191,10 @@ void SDL_Webview::tick()
     workingDocument->GetElementsByTagName(elist, "slider");
     for(int i = 0; i<elist.size(); i++) {
         InputSlider::tick(this, elist[i]);
+    }
+    workingDocument->GetElementsByTagName(elist, "textarea");
+    for(int i = 0; i<elist.size(); i++) {
+        InputTextareaEx::tick(this, elist[i]);
     }
 
     /* Reloading */
