@@ -75,6 +75,8 @@ int InputTextareaEx::getTextAreaIdealHeight(Rml::Element* eTextArea, Rml::Contex
         std::string textContent = eTextArea->GetInnerRML();
         textContent = StringUtils::replacedAllAWithB(textContent, "<", "=");
         textContent = StringUtils::replacedAllAWithB(textContent, ">", "=");
+        textContent = StringUtils::replacedAllAWithB(textContent, "{", "[");
+        textContent = StringUtils::replacedAllAWithB(textContent, "}", "]");
         textContent = StringUtils::replacedAllAWithB(textContent, "\n", "<br/>");
         eDummy->SetInnerRML(textContent+"x");
     }
