@@ -41,7 +41,7 @@ public:
     static void setLogging(bool shouldLog);
     Rml::ElementDocument* rmlLoadDocumentAsset(std::string webdocAssetPath);
     void reload();
-    bool resize(nch::Vec2i dimensions);
+    bool resize(nch::Vec2i newRequestedDims);
     void setScreenPos(nch::Vec2i scrPos);
     void setScreenDims(nch::Vec2i scrDims);
     void setScreenBox(nch::Rect scrBox);
@@ -58,6 +58,7 @@ public:
     void setReloadUsingF5(bool reloadUsingF5);
     void useAnimatedScrolling(bool use);
 private:
+    void processResizes();
     static void rmlGloballyLoadFontAbsolute(std::string fontAbsolutePath, bool fallback = false);
     Rml::ElementDocument* rmlLoadDocumentAbsolute(std::string webdocAbsolutePath);
     void updateResizingBody();
@@ -78,7 +79,12 @@ private:
     std::string workingDocumentPath = "???null???";
     Rml::ElementDocument* workingDocument = nullptr;    
     std::string rmlCtxID = "???null???";    Rml::Context* rmlContext = nullptr;
-    SDL_Texture* webTex = nullptr;          nch::Vec2i dims = {1, 1};
+    SDL_Texture* webTex = nullptr;
+    nch::Vec2i dims = {1, 1};
+    nch::Vec2i requestedDims = {1, 1};
+    nch::Vec2i maxDims = {1, 1};
+    uint64_t lastResizeMS = 0;
+
     nch::Vec2i lastMousePos = {-1, -1};
     nch::Rect screenBox = {-1,-1,-1,-1};
     nch::Rect viewBox = {0,0,-1,-1};

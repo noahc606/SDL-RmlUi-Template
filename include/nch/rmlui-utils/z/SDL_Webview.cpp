@@ -152,6 +152,8 @@ void SDL_Webview::rmlGlobalShutdown()
 void SDL_Webview::tick()
 {
     if(rmlContext==nullptr) return;
+    /* Process resizes */
+    processResizes();
 
     /* Mouse movement, clicking, and scrolling */
     Vec2i mousePos;
@@ -245,6 +247,8 @@ void SDL_Webview::update()
 void SDL_Webview::render()
 {   
     if(rmlContext==nullptr) return;
+    if(webTex==nullptr) return;
+
     SDL_Texture* oldTgt = SDL_GetRenderTarget(sdlRenderer);
     SDL_SetRenderTarget(sdlRenderer, webTex); {
         SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 0);
@@ -429,37 +433,17 @@ void SDL_Webview::reload()
     rmlLoadDocumentAbsolute(workingDocumentPath);
     updateResizingBody();
 }
-bool SDL_Webview::resize(Vec2i dimensions)
+bool SDL_Webview::resize(Vec2i newRequestedDims)
 {
     //Do nothing if dimensions weren't changed or dimensions invalid
-    if(dimensions==dims) return false;
-    if(dimensions.x<1 || dimensions.y<1) return false;
-    if(dimensions.x>maxDimSize.x || dimensions.y>maxDimSize.y) {
-        Log::error(__PRETTY_FUNCTION__, "Provided dimensions \"%dx%d\" are larger than the maximum %dx%d", dimensions.x, dimensions.y, maxDimSize.x, maxDimSize.y);
+    if(newRequestedDims==dims) return false;
+    if(newRequestedDims.x<1 || newRequestedDims.y<1) return false;
+    if(newRequestedDims.x>maxDimSize.x || newRequestedDims.y>maxDimSize.y) {
+        Log::error(__PRETTY_FUNCTION__, "Provided dimensions \"%dx%d\" are larger than the maximum %dx%d", newRequestedDims.x, newRequestedDims.y, maxDimSize.x, maxDimSize.y);
         Log::throwException(__PRETTY_FUNCTION__, "");
     }
 
-    //Resize variable(s)
-    if(screenBox.r.w<0 || screenBox.r.h<0 || (screenBox.r.w==dims.x && screenBox.r.h==dims.y)) {
-        dims = dimensions;
-        setScreenDims(dimensions);
-    }
-    dims = dimensions;
-
-    Rect newSB = screenBox;
-    if(newSB.r.w>dims.x) { newSB.r.w = dims.x; }
-    if(newSB.r.h>dims.y) { newSB.r.h = dims.y; }
-    setScreenBox(newSB);
-
-    //Resize RML context and recreate texture
-    rmlContext->SetDimensions({dims.x, dims.y});
-    if(webTex!=nullptr) {
-        SDL_DestroyTexture(webTex);    
-        webTex = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, dims.x, dims.y);
-    }
-
-    //Misc. webpage work
-    updateResizingBody();
+    requestedDims = newRequestedDims;
     return true;
 }
 void SDL_Webview::setScreenPos(Vec2i scrPos)
@@ -550,7 +534,7 @@ Rml::ElementDocument* SDL_Webview::getWorkingDocument() const {
     return workingDocument;
 }
 Vec2i SDL_Webview::getDims() const {
-    return dims;
+    return requestedDims;
 }
 Rect SDL_Webview::getScreenBox() const {
     return screenBox;
@@ -568,6 +552,48 @@ bool SDL_Webview::hasForcedFocus() const {
     return forcedFocus;
 }
 
+void SDL_Webview::processResizes()
+{
+    if(Timer::getTicks()<lastResizeMS+100) {
+        return;
+    }
+    if(dims==requestedDims) return;
+    bool needRecreation = false;
+    if(requestedDims.x>maxDims.x) {
+        maxDims.x = requestedDims.x;
+        needRecreation = true;
+    }
+    if(requestedDims.y>maxDims.y) {
+        maxDims.y = requestedDims.y;
+        needRecreation = true;
+    }
+
+    //Resize variable(s)
+    if(screenBox.r.w<0 || screenBox.r.h<0 || (screenBox.r.w==dims.x && screenBox.r.h==dims.y)) {
+        dims = requestedDims;
+        setScreenDims(requestedDims);
+    }
+    dims = requestedDims;
+
+    Rect newSB = screenBox;
+    if(newSB.r.w>dims.x) { newSB.r.w = dims.x; }
+    if(newSB.r.h>dims.y) { newSB.r.h = dims.y; }
+    setScreenBox(newSB);
+
+    //Resize RML context and recreate texture
+    rmlContext->SetDimensions({dims.x, dims.y});
+    if(needRecreation && webTex!=nullptr) {
+        SDL_DestroyTexture(webTex);
+        webTex = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, maxDims.x, maxDims.y);
+        if(webTex==NULL) {
+            Log::errorv(__PRETTY_FUNCTION__, "SDL_CreateTexture", SDL_GetError());
+        }
+    }
+
+    //Misc. webpage work
+    updateResizingBody();
+    lastResizeMS = Timer::getTicks();
+}
 void SDL_Webview::rmlGloballyLoadFontAbsolute(std::string fontAbsolutePath, bool fallback) {
     if(!Rml::LoadFontFace(fontAbsolutePath, fallback)) {
         Log::errorv(__PRETTY_FUNCTION__, "Rml::LoadFontFace", "Failed to load font @ \"%s\"", fontAbsolutePath.c_str());
