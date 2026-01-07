@@ -24,7 +24,6 @@ public:
     void render();
     void drawCopyAt(nch::Rect src, nch::Rect dst, double alpha = 1.0);
     void drawCopy(nch::Rect dst, double alpha = 1.0);
-    void drawCopy(nch::Vec2i pos);
     void drawCopy();
     void drawScrollbars();
     void events(SDL_Event& evt);

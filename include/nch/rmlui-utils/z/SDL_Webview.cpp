@@ -261,6 +261,9 @@ void SDL_Webview::drawCopyAt(Rect src, Rect dst, double alpha)
 {
     if(rmlContext==nullptr) return;
     truncateViewBox();
+    if(!animatedScrolling) {
+        animViewBox = viewBox;
+    }
 
     int res = SDL_SetTextureBlendMode(webTex, SDL_BLENDMODE_BLEND);
     if(res!=0) {
@@ -284,11 +287,6 @@ void SDL_Webview::drawCopyAt(Rect src, Rect dst, double alpha)
 void SDL_Webview::drawCopy(Rect dst, double alpha)
 {
     drawCopyAt(Rect(0, 0, -1, -1), dst, alpha);
-}
-void SDL_Webview::drawCopy(Vec2i pos)
-{
-    Rect dst(pos.x, pos.y, dims.x, dims.y);
-    drawCopy(dst);
 }
 void SDL_Webview::drawCopy()
 {
