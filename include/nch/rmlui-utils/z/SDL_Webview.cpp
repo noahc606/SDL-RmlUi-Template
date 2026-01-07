@@ -277,8 +277,9 @@ void SDL_Webview::drawCopyAt(Rect src, Rect dst, double alpha)
     bool srcNull = src.r.w<0||src.r.h<0;
     bool dstNull = dst.r.w<0||dst.r.h<0;
 
-    if( srcNull&& dstNull) SDL_RenderCopy(sdlRenderer, webTex, NULL, NULL);
-    if( srcNull&&!dstNull) SDL_RenderCopy(sdlRenderer, webTex, NULL, &dst.r);
+    Rect realNullSrc(0, 0, dims.x, dims.y);
+    if( srcNull&& dstNull) SDL_RenderCopy(sdlRenderer, webTex, &realNullSrc.r, NULL);
+    if( srcNull&&!dstNull) SDL_RenderCopy(sdlRenderer, webTex, &realNullSrc.r, &dst.r);
     if(!srcNull&& dstNull) SDL_RenderCopy(sdlRenderer, webTex, &src.r, NULL);
     if(!srcNull&&!dstNull) SDL_RenderCopy(sdlRenderer, webTex, &src.r, &dst.r);
 
