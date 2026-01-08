@@ -41,7 +41,7 @@ int SDL_Webview::globalContextCount = 0;
 
 SDL_Webview::SDL_Webview(std::string p_rmlCtxID, Vec2i dimensions)
 {
-    SDL_Webview::dims = dimensions;
+    resize(dimensions);
     initContext(p_rmlCtxID);
 }
 SDL_Webview::SDL_Webview(){}
