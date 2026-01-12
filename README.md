@@ -1,4 +1,4 @@
-# SDL-RmlUi-Template
-An example application using SDL2 and RmlUi to render a webpage.
+# NCH-RmlUi-Utils
+The repo contains an example application using SDL2 and RmlUi to render a webpage.
 
-Depends on <a href="https://github.com/noahc606/nch-cpp-utils">Noah's CPP Utils</a> for the MainLoopDriver. The modules needed are: cpp-utils; math-utils; sdl-utils.
+This is an NCH Library module that depends on <a href="https://github.com/noahc606/nch-cpp-utils">Noah's CPP Utils</a>. The modules needed are: cpp-utils; math-utils; sdl-utils.
