@@ -1,6 +1,6 @@
 #include <RmlUi/Core.h>
 #include <assert.h>
-#include <SDL2/SDL.h>
+#include <GLSDL/GLSDL.h>
 #include <SDL2/SDL_image.h>
 #include <nch/math-utils/vec2.h>
 #include <nch/rmlui-utils/sdl-webview.h>
@@ -11,19 +11,22 @@
 
 using namespace nch;
 
-SDL_Renderer* sdlRenderer;
+GLSDL_Renderer* sdlRenderer;
 std::string basePath;
 SDL_Webview sdlWebview;
 uint64_t ticksPassed = 0;
 
 void draw() {
-    SDL_RenderClear(sdlRenderer);
-    SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 255);
-    SDL_RenderFillRect(sdlRenderer, NULL);
+    GLSDL_GL_SaveState(sdlRenderer);
 
+    GLSDL_RenderClear(sdlRenderer);
+    GLSDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 255);
+    GLSDL_RenderFillRect(sdlRenderer, NULL);
     sdlWebview.render();
     sdlWebview.drawCopy();
-    SDL_RenderPresent(sdlRenderer);
+    GLSDL_RenderPresent(sdlRenderer);
+
+    GLSDL_GL_RestoreState(sdlRenderer);
 }
 void tick() {
     sdlWebview.tick();
@@ -53,12 +56,12 @@ int main(int argc, char** argv)
     /* Initialize SDL, SDL_image, SDL_Webview */
     {
         //SDL
-        assert(SDL_Init(SDL_INIT_VIDEO)==0);
+        assert(GLSDL_Init(SDL_INIT_VIDEO)==0);
         //Window
-        SDL_Window* win = SDL_CreateWindow("RmlUiTests", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,  640, 480, SDL_WINDOW_RESIZABLE);
+        GLSDL_Window* win = GLSDL_CreateWindow("RmlUiTests", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,  640, 480, SDL_WINDOW_RESIZABLE);
         assert(win!=NULL);
         //Renderer
-        sdlRenderer = SDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
+        sdlRenderer = GLSDL_CreateRenderer(win, -1, SDL_RENDERER_ACCELERATED);
         assert(sdlRenderer!=NULL);
         //Base path
         basePath = SDL_GetBasePath();
@@ -92,6 +95,7 @@ int main(int argc, char** argv)
     //Cleanup
     sdlWebview.destroyContext();
     SDL_Webview::rmlGlobalShutdown();
+    GLSDL_Quit();
     return 0;
 }
 

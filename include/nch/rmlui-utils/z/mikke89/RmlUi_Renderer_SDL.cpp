@@ -36,37 +36,37 @@
      #error "Only the OpenGL SDL backend is supported."
  #endif
  
- static void SetRenderClipRect(SDL_Renderer* renderer, const SDL_Rect* rect)
+ static void SetRenderClipRect(GLSDL_Renderer* renderer, const SDL_Rect* rect)
  {
  #if SDL_MAJOR_VERSION >= 3
      SDL_SetRenderClipRect(renderer, rect);
  #else
-     SDL_RenderSetClipRect(renderer, rect);
+     GLSDL_RenderSetClipRect(renderer, rect);
  #endif
  }
- static void SetRenderViewport(SDL_Renderer* renderer, const SDL_Rect* rect)
+ static void SetRenderViewport(GLSDL_Renderer* renderer, const SDL_Rect* rect)
  {
  #if SDL_MAJOR_VERSION >= 3
      SDL_SetRenderViewport(renderer, rect);
  #else
-     SDL_RenderSetViewport(renderer, rect);
+     GLSDL_RenderSetViewport(renderer, rect);
  #endif
  }
  
-RenderInterface_SDL::RenderInterface_SDL(SDL_Renderer* renderer) : renderer(renderer)
+RenderInterface_SDL::RenderInterface_SDL(GLSDL_Renderer* renderer) : renderer(renderer)
 {
     // RmlUi serves vertex colors and textures with premultiplied alpha, set the blend mode accordingly.
     // Equivalent to glBlendFunc(GL_ONE, GL_ONE_MINUS_SRC_ALPHA).
-    blend_mode = SDL_ComposeCustomBlendMode(SDL_BLENDFACTOR_ONE, SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, SDL_BLENDOPERATION_ADD, SDL_BLENDFACTOR_ONE,
-        SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, SDL_BLENDOPERATION_ADD);
+    blend_mode = SDL_BLENDMODE_BLEND;
+    //SDL_ComposeCustomBlendMode(SDL_BLENDFACTOR_ONE, SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, SDL_BLENDOPERATION_ADD, SDL_BLENDFACTOR_ONE, SDL_BLENDFACTOR_ONE_MINUS_SRC_ALPHA, SDL_BLENDOPERATION_ADD);
 }
  
 void RenderInterface_SDL::BeginFrame()
 {
     SetRenderViewport(renderer, nullptr);
-    SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
-    SDL_RenderClear(renderer);
-    SDL_SetRenderDrawBlendMode(renderer, blend_mode);
+    GLSDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+    GLSDL_RenderClear(renderer);
+    GLSDL_SetRenderDrawBlendMode(renderer, blend_mode);
 }
  
 void RenderInterface_SDL::EndFrame() {}
@@ -104,9 +104,9 @@ void RenderInterface_SDL::RenderGeometry(Rml::CompiledGeometryHandle handle, Rml
 #endif
     }
 
-    SDL_Texture* sdl_texture = (SDL_Texture*)texture;
+    GLSDL_Texture* sdl_texture = (GLSDL_Texture*)texture;
 
-    SDL_RenderGeometry(renderer, sdl_texture, sdl_vertices.get(), (int)num_vertices, indices, (int)num_indices);
+    GLSDL_RenderGeometry(renderer, sdl_texture, sdl_vertices.get(), (int)num_vertices, indices, (int)num_indices);
 }
  
 void RenderInterface_SDL::EnableScissorRegion(bool enable)
@@ -183,12 +183,12 @@ Rml::TextureHandle RenderInterface_SDL::LoadTexture(Rml::Vector2i& texture_dimen
             pixels[i + j] = byte(int(pixels[i + j]) * int(alpha) / 255);
     }
 
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    GLSDL_Texture* texture = GLSDL_CreateTextureFromSurface(renderer, surface);
     texture_dimensions = Rml::Vector2i(surface->w, surface->h);
     DestroySurface(surface);
 
     if (texture)
-        SDL_SetTextureBlendMode(texture, blend_mode);
+        GLSDL_SetTextureBlendMode(texture, blend_mode);
 
     return (Rml::TextureHandle)texture;
 }
@@ -212,13 +212,13 @@ Rml::TextureHandle RenderInterface_SDL::GenerateTexture(Rml::Span<const Rml::byt
 
     SDL_Surface* surface = CreateSurface();
 
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_SetTextureBlendMode(texture, blend_mode);
+    GLSDL_Texture* texture = GLSDL_CreateTextureFromSurface(renderer, surface);
+    GLSDL_SetTextureBlendMode(texture, blend_mode);
 
     DestroySurface(surface);
     return (Rml::TextureHandle)texture;
 }
  
 void RenderInterface_SDL::ReleaseTexture(Rml::TextureHandle texture_handle) {
-    SDL_DestroyTexture((SDL_Texture*)texture_handle);
+    GLSDL_DestroyTexture((GLSDL_Texture*)texture_handle);
 }

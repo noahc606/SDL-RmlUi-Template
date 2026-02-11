@@ -39,9 +39,8 @@ add_executable(${PROJ_OUT} ${PROJ_SOURCES})
 set_target_properties(${PROJ_OUT} PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_SOURCE_DIR}/bin"
 )
-
 # Add libraries + link them into target
-target_link_libraries (${PROJ_OUT} PUBLIC "-lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf")
+target_link_libraries (${PROJ_OUT} PUBLIC "-lGL -lGLU -lGLEW -lSDL2 -lSDL2_image -lSDL2_mixer -lSDL2_ttf")
 file (GLOB SHARED_LIBS "${CMAKE_SOURCE_DIR}/lib/lib*.so")
 target_link_libraries (${PROJ_OUT} PRIVATE ${SHARED_LIBS})
 get_target_property (TARGET_LIBS ${PROJ_OUT} LINK_LIBRARIES)

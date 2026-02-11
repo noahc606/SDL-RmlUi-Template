@@ -22,7 +22,7 @@ using namespace nch;
 
 SDL_RendererInfo SDL_Webview::sdlRendererInfo;
 bool SDL_Webview::rmlInitialized = false;
-SDL_Renderer* SDL_Webview::sdlRenderer = nullptr;
+GLSDL_Renderer* SDL_Webview::sdlRenderer = nullptr;
 std::string SDL_Webview::sdlBasePath = "???null???";
 std::string SDL_Webview::webAssetsSubpath = "???null???";
 bool SDL_Webview::loggingEnabled = true;
@@ -66,8 +66,10 @@ bool SDL_Webview::initContext(std::string p_rmlCtxID)
         return false;
     }
     //Create web texture
-    webTex = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, dims.x, dims.y);
+    GLSDL_GL_SaveState(sdlRenderer);
+    webTex = GLSDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, dims.x, dims.y);
     TexUtils::clearTexture(sdlRenderer, webTex);
+    GLSDL_GL_RestoreState(sdlRenderer);
     setScreenPos({0, 0});
     globalContextCount++;
 
@@ -90,12 +92,14 @@ void SDL_Webview::destroyContext()
 
     workingDocumentPath = "???null???";
     if(webTex!=nullptr) {
+        GLSDL_GL_SaveState(sdlRenderer);
+        GLSDL_DestroyTexture(webTex);
+        GLSDL_GL_RestoreState(sdlRenderer);
         webTex = nullptr;
-        SDL_DestroyTexture(webTex);
     }
 }
 
-void SDL_Webview::rmlGlobalInit(SDL_Renderer* p_sdlRenderer, std::string p_sdlBasePath, std::string p_webAssetsSubpath)
+void SDL_Webview::rmlGlobalInit(GLSDL_Renderer* p_sdlRenderer, std::string p_sdlBasePath, std::string p_webAssetsSubpath)
 {
     if(rmlInitialized) {
         Log::warn(__PRETTY_FUNCTION__, "RmlUi is already globally initialized");
@@ -127,7 +131,11 @@ void SDL_Webview::rmlGlobalInit(SDL_Renderer* p_sdlRenderer, std::string p_sdlBa
     }
 
     /* SDL renderer info */
+#ifdef NCH_GLSDL_OPENGL_BACKEND
+    SDL_GetRendererInfo(sdlRenderer->toSDL_Renderer(), &sdlRendererInfo);
+#else
     SDL_GetRendererInfo(sdlRenderer, &sdlRendererInfo);
+#endif
     maxDimSize.x = sdlRendererInfo.max_texture_width;
     maxDimSize.y = sdlRendererInfo.max_texture_height;
 
@@ -144,7 +152,9 @@ void SDL_Webview::rmlGlobalShutdown()
     }
 
     maxDimSize = {4096, 4096};
+    GLSDL_GL_SaveState(sdlRenderer);
     Rml::Shutdown();
+    GLSDL_GL_RestoreState(sdlRenderer);
     rmlInitialized = false;
 }
 
@@ -249,13 +259,13 @@ void SDL_Webview::render()
     if(rmlContext==nullptr) return;
     if(webTex==nullptr) return;
 
-    SDL_Texture* oldTgt = SDL_GetRenderTarget(sdlRenderer);
-    SDL_SetRenderTarget(sdlRenderer, webTex); {
-        SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 0);
-        SDL_SetRenderDrawBlendMode(sdlRenderer, SDL_BLENDMODE_BLEND);
-        SDL_RenderClear(sdlRenderer);
+    GLSDL_Texture* oldTgt = GLSDL_GetRenderTarget(sdlRenderer);
+    GLSDL_SetRenderTarget(sdlRenderer, webTex); {
+        GLSDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 0);
+        GLSDL_SetRenderDrawBlendMode(sdlRenderer, SDL_BLENDMODE_BLEND);
+        GLSDL_RenderClear(sdlRenderer);
         rmlContext->Render();
-    } SDL_SetRenderTarget(sdlRenderer, oldTgt);
+    } GLSDL_SetRenderTarget(sdlRenderer, oldTgt);
 }
 void SDL_Webview::drawCopyAt(Rect src, Rect dst, double alpha)
 {
@@ -265,25 +275,25 @@ void SDL_Webview::drawCopyAt(Rect src, Rect dst, double alpha)
         animViewBox = viewBox;
     }
 
-    int res = SDL_SetTextureBlendMode(webTex, SDL_BLENDMODE_BLEND);
+    int res = GLSDL_SetTextureBlendMode(webTex, SDL_BLENDMODE_BLEND);
     if(res!=0) {
         Log::errorv(__PRETTY_FUNCTION__, "SDL_SetTextureBlendMode()", SDL_GetError());
     }
 
     if(alpha<0) alpha = 0;
     if(alpha>1) alpha = 1;
-    SDL_SetTextureAlphaMod(webTex, (Uint8)(alpha*255));
+    GLSDL_SetTextureAlphaMod(webTex, (Uint8)(alpha*255));
     
     bool srcNull = src.r.w<0||src.r.h<0;
     bool dstNull = dst.r.w<0||dst.r.h<0;
 
     Rect realNullSrc(0, 0, dims.x, dims.y);
-    if( srcNull&& dstNull) SDL_RenderCopy(sdlRenderer, webTex, &realNullSrc.r, NULL);
-    if( srcNull&&!dstNull) SDL_RenderCopy(sdlRenderer, webTex, &realNullSrc.r, &dst.r);
-    if(!srcNull&& dstNull) SDL_RenderCopy(sdlRenderer, webTex, &src.r, NULL);
-    if(!srcNull&&!dstNull) SDL_RenderCopy(sdlRenderer, webTex, &src.r, &dst.r);
+    if( srcNull&& dstNull) GLSDL_RenderCopy(sdlRenderer, webTex, &realNullSrc.r, NULL);
+    if( srcNull&&!dstNull) GLSDL_RenderCopy(sdlRenderer, webTex, &realNullSrc.r, &dst.r);
+    if(!srcNull&& dstNull) GLSDL_RenderCopy(sdlRenderer, webTex, &src.r, NULL);
+    if(!srcNull&&!dstNull) GLSDL_RenderCopy(sdlRenderer, webTex, &src.r, &dst.r);
 
-    SDL_SetTextureAlphaMod(webTex, 255);
+    GLSDL_SetTextureAlphaMod(webTex, 255);
 }
 void SDL_Webview::drawCopy(Rect dst, double alpha)
 {
@@ -320,11 +330,11 @@ void SDL_Webview::drawScrollbars()
 
     if(sbVisible) {
     //Draw scroll bar background
-        SDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 127);
-        SDL_RenderFillRect(sdlRenderer, &sb0Dst.r);
+        GLSDL_SetRenderDrawColor(sdlRenderer, 0, 0, 0, 127);
+        GLSDL_RenderFillRect(sdlRenderer, &sb0Dst.r);
         //Draw scroll bar foreground
-        SDL_SetRenderDrawColor(sdlRenderer, 255, 255, 255, 127);
-        SDL_RenderFillRect(sdlRenderer, &sb1Dst.r);
+        GLSDL_SetRenderDrawColor(sdlRenderer, 255, 255, 255, 127);
+        GLSDL_RenderFillRect(sdlRenderer, &sb1Dst.r);
     }
 }
 void SDL_Webview::events(SDL_Event& evt)
@@ -582,8 +592,10 @@ void SDL_Webview::processResizes()
     //Resize RML context and recreate texture
     rmlContext->SetDimensions({dims.x, dims.y});
     if(needRecreation && webTex!=nullptr) {
-        SDL_DestroyTexture(webTex);
-        webTex = SDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, maxDims.x, maxDims.y);
+        GLSDL_GL_SaveState(sdlRenderer);
+        GLSDL_DestroyTexture(webTex);
+        webTex = GLSDL_CreateTexture(sdlRenderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, maxDims.x, maxDims.y);
+        GLSDL_GL_RestoreState(sdlRenderer);
         if(webTex==NULL) {
             Log::errorv(__PRETTY_FUNCTION__, "SDL_CreateTexture", SDL_GetError());
         }
@@ -612,7 +624,9 @@ Rml::ElementDocument* SDL_Webview::rmlLoadDocumentAbsolute(std::string webdocAbs
         rmlContext->Update();
     }
     //Load new document
+    GLSDL_GL_SaveState(sdlRenderer);
     workingDocument = rmlContext->LoadDocument(webdocAbsolutePath);
+    GLSDL_GL_RestoreState(sdlRenderer);
     if(workingDocument==nullptr) {
         Log::errorv(__PRETTY_FUNCTION__, "Rml::Context::LoadDocument", "Failed to load webpage at path \"%s\"", webdocAbsolutePath.c_str());
         return nullptr;
