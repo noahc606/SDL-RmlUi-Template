@@ -99,11 +99,11 @@ void SDL_Webview::destroyContext()
     }
 }
 
-void SDL_Webview::rmlGlobalInit(GLSDL_Renderer* p_sdlRenderer, std::string p_sdlBasePath, std::string p_webAssetsSubpath)
+bool SDL_Webview::rmlGlobalInit(GLSDL_Renderer* p_sdlRenderer, std::string p_sdlBasePath, std::string p_webAssetsSubpath)
 {
     if(rmlInitialized) {
         Log::warn(__PRETTY_FUNCTION__, "RmlUi is already globally initialized");
-        return;
+        return false;
     }
 
     /* RmlUi library + subsystems init */
@@ -111,7 +111,7 @@ void SDL_Webview::rmlGlobalInit(GLSDL_Renderer* p_sdlRenderer, std::string p_sdl
         //Main init
         if(!Rml::Initialise()) {
             Log::errorv(__PRETTY_FUNCTION__, "Rml::Initialise()", "RmlUi init returned false");
-            return;
+            return false;
         }
         //Subsystems init
         sdlRenderer = p_sdlRenderer;
@@ -140,9 +140,47 @@ void SDL_Webview::rmlGlobalInit(GLSDL_Renderer* p_sdlRenderer, std::string p_sdl
     maxDimSize.y = sdlRendererInfo.max_texture_height;
 
     rmlInitialized = true;
+
+    return true;
+}
+void SDL_Webview::rmlGloballyLoadFontAbsolute(std::string fontAbsolutePath, bool fallback) {
+    if(!Rml::LoadFontFace(fontAbsolutePath, fallback)) {
+        Log::errorv(__PRETTY_FUNCTION__, "Rml::LoadFontFace", "Failed to load font @ \"%s\"", fontAbsolutePath.c_str());
+    }
+}
+Rml::ElementDocument* SDL_Webview::rmlLoadDocumentAbsolute(std::string webdocAbsolutePath) {
+    /* Validation */
+    if(!rmlInitialized) {
+        Log::warnv(__PRETTY_FUNCTION__, "returning nullptr", "RmlUi is not initialized (did you call SDL_Webview::rmlGlobalInit()?)");
+        return nullptr;
+    }
+
+    /* Load */
+    //Unload old document
+    if(workingDocument!=nullptr) {
+        rmlContext->UnloadDocument(workingDocument);
+        rmlContext->Update();
+    }
+    //Load new document
+    GLSDL_GL_SaveState(sdlRenderer);
+    workingDocument = rmlContext->LoadDocument(webdocAbsolutePath);
+    GLSDL_GL_RestoreState(sdlRenderer);
+    if(workingDocument==nullptr) {
+        Log::errorv(__PRETTY_FUNCTION__, "Rml::Context::LoadDocument", "Failed to load webpage at path \"%s\"", webdocAbsolutePath.c_str());
+        return nullptr;
+    }
+    //Successful load by this point
+    workingDocumentPath = webdocAbsolutePath;
+    workingDocument->Show();
+    workingDocument->ReloadStyleSheet();
+    return workingDocument;
+    
 }
 void SDL_Webview::rmlGloballyLoadFontAsset(std::string fontAssetPath, bool fallback) {
     rmlGloballyLoadFontAbsolute(sdlBasePath+"/"+webAssetsSubpath+"/web_assets/"+fontAssetPath);
+}
+Rml::ElementDocument* SDL_Webview::rmlLoadDocumentAsset(std::string webdocAssetPath) {
+    return rmlLoadDocumentAbsolute(sdlBasePath+"/"+webAssetsSubpath+"/web_assets/"+webdocAssetPath);
 }
 void SDL_Webview::rmlGlobalShutdown()
 {
@@ -427,9 +465,6 @@ void SDL_Webview::events(SDL_Event& evt)
 void SDL_Webview::setLogging(bool shouldLog) {
     loggingEnabled = shouldLog;
 }
-Rml::ElementDocument* SDL_Webview::rmlLoadDocumentAsset(std::string webdocAssetPath) {
-    return rmlLoadDocumentAbsolute(sdlBasePath+"/"+webAssetsSubpath+"/web_assets/"+webdocAssetPath);
-}
 void SDL_Webview::reload()
 {
     /* Validation */
@@ -604,39 +639,6 @@ void SDL_Webview::processResizes()
     //Misc. webpage work
     updateResizingBody();
     lastResizeMS = Timer::getTicks();
-}
-void SDL_Webview::rmlGloballyLoadFontAbsolute(std::string fontAbsolutePath, bool fallback) {
-    if(!Rml::LoadFontFace(fontAbsolutePath, fallback)) {
-        Log::errorv(__PRETTY_FUNCTION__, "Rml::LoadFontFace", "Failed to load font @ \"%s\"", fontAbsolutePath.c_str());
-    }
-}
-Rml::ElementDocument* SDL_Webview::rmlLoadDocumentAbsolute(std::string webdocAbsolutePath) {
-    /* Validation */
-    if(!rmlInitialized) {
-        Log::warnv(__PRETTY_FUNCTION__, "returning nullptr", "RmlUi is not initialized (did you call SDL_Webview::rmlGlobalInit()?)");
-        return nullptr;
-    }
-
-    /* Load */
-    //Unload old document
-    if(workingDocument!=nullptr) {
-        rmlContext->UnloadDocument(workingDocument);
-        rmlContext->Update();
-    }
-    //Load new document
-    GLSDL_GL_SaveState(sdlRenderer);
-    workingDocument = rmlContext->LoadDocument(webdocAbsolutePath);
-    GLSDL_GL_RestoreState(sdlRenderer);
-    if(workingDocument==nullptr) {
-        Log::errorv(__PRETTY_FUNCTION__, "Rml::Context::LoadDocument", "Failed to load webpage at path \"%s\"", webdocAbsolutePath.c_str());
-        return nullptr;
-    }
-    //Successful load by this point
-    workingDocumentPath = webdocAbsolutePath;
-    workingDocument->Show();
-    workingDocument->ReloadStyleSheet();
-    return workingDocument;
-    
 }
 void SDL_Webview::updateResizingBody()
 {

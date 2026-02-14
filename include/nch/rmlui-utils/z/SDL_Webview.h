@@ -13,8 +13,11 @@ public:
     SDL_Webview(std::string rmlCtxID, nch::Vec2i dimensions = {1, 1});
     SDL_Webview();
     ~SDL_Webview();
-    static void rmlGlobalInit(GLSDL_Renderer* p_sdlRenderer, std::string p_sdlBasePath, std::string p_webAssetsSubpath = "");
+    static bool rmlGlobalInit(GLSDL_Renderer* p_sdlRenderer, std::string p_sdlBasePath, std::string p_webAssetsSubpath = "");
+    static void rmlGloballyLoadFontAbsolute(std::string fontAbsolutePath, bool fallback = false);
+    Rml::ElementDocument* rmlLoadDocumentAbsolute(std::string webdocAbsolutePath);
     static void rmlGloballyLoadFontAsset(std::string fontAssetPath, bool fallback = false);
+    Rml::ElementDocument* rmlLoadDocumentAsset(std::string webdocAssetPath);
     static void rmlGlobalShutdown();
     bool initContext(std::string rmlCtxID);
     bool initContext();
@@ -38,7 +41,6 @@ public:
     bool hasForcedFocus() const;
 
     static void setLogging(bool shouldLog);
-    Rml::ElementDocument* rmlLoadDocumentAsset(std::string webdocAssetPath);
     void reload();
     bool resize(nch::Vec2i newRequestedDims);
     void setScreenPos(nch::Vec2i scrPos);
@@ -58,8 +60,6 @@ public:
     void useAnimatedScrolling(bool use);
 private:
     void processResizes();
-    static void rmlGloballyLoadFontAbsolute(std::string fontAbsolutePath, bool fallback = false);
-    Rml::ElementDocument* rmlLoadDocumentAbsolute(std::string webdocAbsolutePath);
     void updateResizingBody();
     void truncateViewBox();
 
